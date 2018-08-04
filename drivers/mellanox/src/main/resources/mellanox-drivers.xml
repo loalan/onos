@@ -19,6 +19,7 @@
         <behaviour api="org.onosproject.net.behaviour.PiPipelineProgrammable"
                    impl="org.onosproject.drivers.mellanox.SpectrumPipelineProgrammable"/>
         <property name="noHashedTable">true</property>
+        <property name="tableDeleteBeforeUpdate">true</property>
     </driver>
 </drivers>
 

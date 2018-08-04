@@ -70,11 +70,13 @@ public class PipeconfLoader {
     private static final String P4C_RES_BASE_PATH = P4C_OUT_PATH + "/%s/%s/%s/";
 
     private static final String SEP = File.separator;
+    private static final String SPECTRUM = "spectrum";
     private static final String TOFINO = "tofino";
     private static final String BMV2 = "bmv2";
     private static final String DEFAULT_PLATFORM = "default";
     private static final String BMV2_JSON = "bmv2.json";
     private static final String P4INFO_TXT = "p4info.txt";
+    private static final String SPECTRUM_BIN = "spectrum.bin";
     private static final String TOFINO_BIN = "tofino.bin";
     private static final String TOFINO_CTX_JSON = "context.json";
 
@@ -125,6 +127,9 @@ public class PipeconfLoader {
             switch (target) {
                 case BMV2:
                     return buildBmv2Pipeconf(profile, platform);
+                case SPECTRUM:
+                    log.warn("=====SPECTRUM =buildPipeconfFromPath========= " + path);
+                    return buildSpectrumPipeconf(profile, platform);                    
                 case TOFINO:
                     return buildTofinoPipeconf(profile, platform);
                 default:
@@ -151,6 +156,22 @@ public class PipeconfLoader {
         return basePipeconfBuilder(
                 profile, platform, p4InfoUrl, Bmv2FabricInterpreter.class)
                 .addExtension(ExtensionType.BMV2_JSON, bmv2JsonUrl)
+                .build();
+    }
+
+    private static PiPipeconf buildSpectrumPipeconf(String profile, String platform)
+            throws FileNotFoundException {
+        log.warn("-------SPECTRUM: " + profile + "/" + platform);
+        final URL spectrumBinUrl = PipeconfLoader.class.getResource(format(
+                P4C_RES_BASE_PATH + SPECTRUM_BIN, profile, SPECTRUM, platform));
+        final URL p4InfoUrl = PipeconfLoader.class.getResource(format(
+                P4C_RES_BASE_PATH + P4INFO_TXT, profile, SPECTRUM, platform));
+        if (spectrumBinUrl == null || p4InfoUrl == null) {
+            throw new FileNotFoundException();
+        }
+        return basePipeconfBuilder(
+                profile, platform, p4InfoUrl, FabricInterpreter.class)
+                .addExtension(ExtensionType.SPECTRUM_BIN, spectrumBinUrl)
                 .build();
     }
 
