@@ -15,7 +15,12 @@
  */
 package org.onosproject.openstacknetworking.web;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.onosproject.openstacknetworking.api.OpenstackNetworkAdminService;
+import org.onosproject.openstacknode.api.DpdkConfig;
+import org.onosproject.openstacknode.api.OpenstackNode;
+import org.onosproject.openstacknode.api.OpenstackNodeService;
 import org.onosproject.rest.AbstractWebResource;
 import org.openstack4j.openstack.networking.domain.NeutronPort;
 import org.slf4j.Logger;
@@ -49,9 +54,12 @@ public class OpenstackPortWebResource extends AbstractWebResource {
 
     private static final String MESSAGE = "Received ports %s request";
     private static final String PORTS = "ports";
+    private static final String VIF_TYPE = "vif_type";
+    private static final String VHOSTUSER = "vhostuser";
+    private static final String SOCKET_DIR = "socket_dir";
 
-    private final OpenstackNetworkAdminService adminService =
-                                        get(OpenstackNetworkAdminService.class);
+    private final OpenstackNetworkAdminService adminService = get(OpenstackNetworkAdminService.class);
+    private final OpenstackNodeService nodeService = get(OpenstackNodeService.class);
 
     @Context
     private UriInfo uriInfo;
@@ -101,8 +109,25 @@ public class OpenstackPortWebResource extends AbstractWebResource {
                                  jsonToModelEntity(input, NeutronPort.class);
 
         adminService.updatePort(port);
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode jsonNode = mapper.createObjectNode();
 
-        return status(Response.Status.OK).build();
+        OpenstackNode node = nodeService.node(port.getHostId());
+        if (node == null) {
+            return status(Response.Status.OK).build();
+        } else if (node.datapathType().equals(DpdkConfig.DatapathType.NETDEV)) {
+            log.debug("UpdatePort for port {} called in netdev device {} " +
+                            "so sends vif type as a payload of the response",
+                    port.getId(), node.hostname());
+            jsonNode.put(VIF_TYPE, VHOSTUSER);
+
+            if (node.socketDir() != null) {
+                jsonNode.put(SOCKET_DIR, node.socketDir());
+            }
+            return status(Response.Status.OK).entity(jsonNode.toString()).build();
+        } else {
+            return status(Response.Status.OK).build();
+        }
     }
 
     /**

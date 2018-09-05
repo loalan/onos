@@ -20,14 +20,12 @@ import com.google.common.base.Strings;
 import org.onlab.osgi.DefaultServiceDirectory;
 import org.onlab.packet.IpAddress;
 import org.onlab.packet.MacAddress;
-import org.onosproject.core.GroupId;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.Port;
 import org.onosproject.net.PortNumber;
 import org.onosproject.net.behaviour.ControllerInfo;
 import org.onosproject.net.device.DeviceService;
-import org.onosproject.net.group.DefaultGroupKey;
-import org.onosproject.net.group.GroupKey;
+import org.onosproject.openstacknode.api.DpdkConfig.DatapathType;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -56,8 +54,9 @@ public class DefaultOpenstackNode implements OpenstackNode {
     private final Collection<OpenstackPhyInterface> phyIntfs;
     private final Collection<ControllerInfo> controllers;
     private final OpenstackAuth auth;
-    private final String endPoint;
+    private final String endpoint;
     private final OpenstackSshAuth sshAuth;
+    private final DpdkConfig dpdkConfig;
 
     private static final String NOT_NULL_MSG = "Node % cannot be null";
 
@@ -77,8 +76,9 @@ public class DefaultOpenstackNode implements OpenstackNode {
      * @param phyIntfs      physical interfaces
      * @param controllers   customized controllers
      * @param auth          keystone authentication info
-     * @param endPoint      openstack endpoint URL
+     * @param endpoint      openstack endpoint URL
      * @param sshAuth       ssh authentication info
+     * @param dpdkConfig    dpdk config
      */
     protected DefaultOpenstackNode(String hostname, NodeType type,
                                    DeviceId intgBridge,
@@ -90,8 +90,9 @@ public class DefaultOpenstackNode implements OpenstackNode {
                                    Collection<OpenstackPhyInterface> phyIntfs,
                                    Collection<ControllerInfo> controllers,
                                    OpenstackAuth auth,
-                                   String endPoint,
-                                   OpenstackSshAuth sshAuth) {
+                                   String endpoint,
+                                   OpenstackSshAuth sshAuth,
+                                   DpdkConfig dpdkConfig) {
         this.hostname = hostname;
         this.type = type;
         this.intgBridge = intgBridge;
@@ -103,8 +104,9 @@ public class DefaultOpenstackNode implements OpenstackNode {
         this.phyIntfs = phyIntfs;
         this.controllers = controllers;
         this.auth = auth;
-        this.endPoint = endPoint;
+        this.endpoint = endpoint;
         this.sshAuth = sshAuth;
+        this.dpdkConfig = dpdkConfig;
     }
 
     @Override
@@ -148,13 +150,24 @@ public class DefaultOpenstackNode implements OpenstackNode {
     }
 
     @Override
-    public NodeState state() {
-        return state;
+    public DatapathType datapathType() {
+        if (dpdkConfig == null) {
+            return DatapathType.NORMAL;
+        }
+        return dpdkConfig.datapathType();
     }
 
     @Override
-    public GroupKey gatewayGroupKey(NetworkMode mode) {
-        return new DefaultGroupKey(intgBridge.toString().concat(mode.name()).getBytes());
+    public String socketDir() {
+        if (dpdkConfig == null) {
+            return null;
+        }
+        return dpdkConfig.socketDir();
+    }
+
+    @Override
+    public NodeState state() {
+        return state;
     }
 
     @Override
@@ -224,11 +237,6 @@ public class DefaultOpenstackNode implements OpenstackNode {
     }
 
     @Override
-    public GroupId gatewayGroupId(NetworkMode mode) {
-        return new GroupId(intgBridge.toString().concat(mode.name()).hashCode());
-    }
-
-    @Override
     public boolean equals(Object obj) {
         if (this == obj) {
             return true;
@@ -246,8 +254,9 @@ public class DefaultOpenstackNode implements OpenstackNode {
                     Objects.equals(phyIntfs, that.phyIntfs) &&
                     Objects.equals(controllers, that.controllers) &&
                     Objects.equals(auth, that.auth) &&
-                    Objects.equals(endPoint, that.endPoint) &&
-                    Objects.equals(sshAuth, that.sshAuth);
+                    Objects.equals(endpoint, that.endpoint) &&
+                    Objects.equals(sshAuth, that.sshAuth) &&
+                    Objects.equals(dpdkConfig, that.dpdkConfig);
         }
         return false;
     }
@@ -264,8 +273,9 @@ public class DefaultOpenstackNode implements OpenstackNode {
                 phyIntfs,
                 controllers,
                 auth,
-                endPoint,
-                sshAuth);
+                endpoint,
+                sshAuth,
+                dpdkConfig);
     }
 
     @Override
@@ -282,8 +292,9 @@ public class DefaultOpenstackNode implements OpenstackNode {
                 .add("phyIntfs", phyIntfs)
                 .add("controllers", controllers)
                 .add("auth", auth)
-                .add("endpoint", endPoint)
+                .add("endpoint", endpoint)
                 .add("sshAuth", sshAuth)
+                .add("datapathType", dpdkConfig)
                 .toString();
     }
 
@@ -301,14 +312,34 @@ public class DefaultOpenstackNode implements OpenstackNode {
                 .phyIntfs(phyIntfs)
                 .controllers(controllers)
                 .authentication(auth)
-                .endPoint(endPoint)
+                .endpoint(endpoint)
                 .sshAuthInfo(sshAuth)
+                .dpdkConfig(dpdkConfig)
+                .build();
+    }
+
+    @Override
+    public OpenstackNode updateIntbridge(DeviceId newIntgBridge) {
+        return new Builder()
+                .type(type)
+                .hostname(hostname)
+                .intgBridge(newIntgBridge)
+                .managementIp(managementIp)
+                .dataIp(dataIp)
+                .vlanIntf(vlanIntf)
+                .uplinkPort(uplinkPort)
+                .state(state)
+                .phyIntfs(phyIntfs)
+                .controllers(controllers)
+                .authentication(auth)
+                .endpoint(endpoint)
+                .sshAuthInfo(sshAuth)
+                .dpdkConfig(dpdkConfig)
                 .build();
     }
 
     @Override
     public Collection<OpenstackPhyInterface> phyIntfs() {
-
         if (phyIntfs == null) {
             return new ArrayList<>();
         }
@@ -329,6 +360,11 @@ public class DefaultOpenstackNode implements OpenstackNode {
     @Override
     public OpenstackSshAuth sshAuthInfo() {
         return sshAuth;
+    }
+
+    @Override
+    public DpdkConfig dpdkConfig() {
+        return dpdkConfig;
     }
 
     @Override
@@ -356,8 +392,8 @@ public class DefaultOpenstackNode implements OpenstackNode {
     }
 
     @Override
-    public String endPoint() {
-        return endPoint;
+    public String endpoint() {
+        return endpoint;
     }
 
     /**
@@ -388,8 +424,9 @@ public class DefaultOpenstackNode implements OpenstackNode {
                 .phyIntfs(osNode.phyIntfs())
                 .controllers(osNode.controllers())
                 .authentication(osNode.authentication())
-                .endPoint(osNode.endPoint())
-                .sshAuthInfo(osNode.sshAuthInfo());
+                .endpoint(osNode.endpoint())
+                .sshAuthInfo(osNode.sshAuthInfo())
+                .dpdkConfig(osNode.dpdkConfig());
     }
 
     /**
@@ -408,8 +445,9 @@ public class DefaultOpenstackNode implements OpenstackNode {
         private Collection<OpenstackPhyInterface> phyIntfs;
         private Collection<ControllerInfo> controllers;
         private OpenstackAuth auth;
-        private String endPoint;
+        private String endpoint;
         private OpenstackSshAuth sshAuth;
+        private DpdkConfig dpdkConfig;
 
         // private constructor not intended to use from external
         private Builder() {
@@ -423,13 +461,11 @@ public class DefaultOpenstackNode implements OpenstackNode {
             checkArgument(managementIp != null, NOT_NULL_MSG, "management IP");
 
             if (type != NodeType.CONTROLLER) {
-                checkArgument(intgBridge != null, NOT_NULL_MSG, "integration bridge");
-
                 if (dataIp == null && Strings.isNullOrEmpty(vlanIntf)) {
                     throw new IllegalArgumentException("Either data IP or VLAN interface is required");
                 }
             } else {
-                checkArgument(endPoint != null, NOT_NULL_MSG, "endpoint URL");
+                checkArgument(endpoint != null, NOT_NULL_MSG, "endpoint URL");
             }
 
             if (type == NodeType.GATEWAY && uplinkPort == null) {
@@ -447,8 +483,9 @@ public class DefaultOpenstackNode implements OpenstackNode {
                     phyIntfs,
                     controllers,
                     auth,
-                    endPoint,
-                    sshAuth);
+                    endpoint,
+                    sshAuth,
+                    dpdkConfig);
         }
 
         @Override
@@ -520,14 +557,20 @@ public class DefaultOpenstackNode implements OpenstackNode {
         }
 
         @Override
-        public Builder endPoint(String endPoint) {
-            this.endPoint = endPoint;
+        public Builder endpoint(String endpoint) {
+            this.endpoint = endpoint;
             return this;
         }
 
         @Override
         public Builder sshAuthInfo(OpenstackSshAuth sshAuth) {
             this.sshAuth = sshAuth;
+            return this;
+        }
+
+        @Override
+        public Builder dpdkConfig(DpdkConfig dpdkConfig) {
+            this.dpdkConfig = dpdkConfig;
             return this;
         }
     }

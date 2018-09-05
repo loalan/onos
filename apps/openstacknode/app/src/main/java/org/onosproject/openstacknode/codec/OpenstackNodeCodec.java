@@ -24,6 +24,7 @@ import org.onosproject.codec.JsonCodec;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.behaviour.ControllerInfo;
 import org.onosproject.openstacknode.api.DefaultOpenstackNode;
+import org.onosproject.openstacknode.api.DpdkConfig;
 import org.onosproject.openstacknode.api.NodeState;
 import org.onosproject.openstacknode.api.OpenstackAuth;
 import org.onosproject.openstacknode.api.OpenstackNode;
@@ -59,8 +60,9 @@ public final class OpenstackNodeCodec extends JsonCodec<OpenstackNode> {
     private static final String PHYSICAL_INTERFACES = "phyIntfs";
     private static final String CONTROLLERS = "controllers";
     private static final String AUTHENTICATION = "authentication";
-    private static final String END_POINT = "endPoint";
+    private static final String END_POINT = "endpoint";
     private static final String SSH_AUTH = "sshAuth";
+    private static final String DPDK_CONFIG = "dpdkConfig";
 
     private static final String MISSING_MESSAGE = " is required in OpenstackNode";
 
@@ -80,10 +82,12 @@ public final class OpenstackNodeCodec extends JsonCodec<OpenstackNode> {
             result.put(UPLINK_PORT, node.uplinkPort());
         }
 
-        if (type != OpenstackNode.NodeType.CONTROLLER) {
+        if (type == OpenstackNode.NodeType.CONTROLLER) {
+            result.put(END_POINT, node.endpoint());
+        }
+
+        if (node.intgBridge() != null) {
             result.put(INTEGRATION_BRIDGE, node.intgBridge().toString());
-        } else {
-            result.put(END_POINT, node.endPoint());
         }
 
         if (node.vlanIntf() != null) {
@@ -122,6 +126,12 @@ public final class OpenstackNodeCodec extends JsonCodec<OpenstackNode> {
             result.set(SSH_AUTH, sshAuthJson);
         }
 
+        if (node.dpdkConfig() != null) {
+            ObjectNode dpdkConfigJson = context.codec(DpdkConfig.class)
+                    .encode(node.dpdkConfig(), context);
+            result.set(DPDK_CONFIG, dpdkConfigJson);
+        }
+
         return result;
     }
 
@@ -148,20 +158,21 @@ public final class OpenstackNodeCodec extends JsonCodec<OpenstackNode> {
             nodeBuilder.uplinkPort(nullIsIllegal(json.get(UPLINK_PORT).asText(),
                     UPLINK_PORT + MISSING_MESSAGE));
         }
-        if (!type.equals(CONTROLLER)) {
-            String iBridge = nullIsIllegal(json.get(INTEGRATION_BRIDGE).asText(),
-                    INTEGRATION_BRIDGE + MISSING_MESSAGE);
-            nodeBuilder.intgBridge(DeviceId.deviceId(iBridge));
-        } else {
+        if (type.equals(CONTROLLER)) {
             String endPoint = nullIsIllegal(json.get(END_POINT).asText(),
                     END_POINT + MISSING_MESSAGE);
-            nodeBuilder.endPoint(endPoint);
+            nodeBuilder.endpoint(endPoint);
         }
         if (json.get(VLAN_INTF_NAME) != null) {
             nodeBuilder.vlanIntf(json.get(VLAN_INTF_NAME).asText());
         }
         if (json.get(DATA_IP) != null) {
             nodeBuilder.dataIp(IpAddress.valueOf(json.get(DATA_IP).asText()));
+        }
+
+        JsonNode intBridgeJson = json.get(INTEGRATION_BRIDGE);
+        if (intBridgeJson != null) {
+            nodeBuilder.intgBridge(DeviceId.deviceId(intBridgeJson.asText()));
         }
 
         // parse physical interfaces
@@ -196,7 +207,7 @@ public final class OpenstackNodeCodec extends JsonCodec<OpenstackNode> {
 
         // parse authentication
         JsonNode authJson = json.get(AUTHENTICATION);
-        if (json.get(AUTHENTICATION) != null) {
+        if (authJson != null) {
 
             final JsonCodec<OpenstackAuth> authCodec = context.codec(OpenstackAuth.class);
 
@@ -206,11 +217,19 @@ public final class OpenstackNodeCodec extends JsonCodec<OpenstackNode> {
 
         // parse ssh authentication
         JsonNode sshAuthJson = json.get(SSH_AUTH);
-        if (json.get(SSH_AUTH) != null) {
+        if (sshAuthJson != null) {
             final JsonCodec<OpenstackSshAuth> sshAuthJsonCodec = context.codec(OpenstackSshAuth.class);
 
             OpenstackSshAuth sshAuth = sshAuthJsonCodec.decode((ObjectNode) sshAuthJson.deepCopy(), context);
             nodeBuilder.sshAuthInfo(sshAuth);
+        }
+
+        JsonNode dpdkConfigJson = json.get(DPDK_CONFIG);
+        if (dpdkConfigJson != null) {
+            final JsonCodec<DpdkConfig> dpdkConfigJsonCodec = context.codec(DpdkConfig.class);
+
+            DpdkConfig dpdkConfig = dpdkConfigJsonCodec.decode((ObjectNode) dpdkConfigJson.deepCopy(), context);
+            nodeBuilder.dpdkConfig(dpdkConfig);
         }
 
         log.trace("node is {}", nodeBuilder.build().toString());

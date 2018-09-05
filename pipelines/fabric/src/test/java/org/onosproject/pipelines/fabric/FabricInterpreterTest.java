@@ -30,7 +30,6 @@ import org.onosproject.net.pi.runtime.PiAction;
 import org.onosproject.net.pi.runtime.PiActionParam;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 /**
  * Test for fabric interpreter.
@@ -101,7 +100,7 @@ public class FabricInterpreterTest {
         PiAction mappedAction = interpreter.mapTreatment(treatment,
                                                          FabricConstants.FABRIC_INGRESS_FILTERING_INGRESS_PORT_VLAN);
         PiAction expectedAction = PiAction.builder()
-                .withId(FabricConstants.NOP)
+                .withId(FabricConstants.FABRIC_INGRESS_FILTERING_NOP_INGRESS_PORT_VLAN)
                 .build();
 
         assertEquals(expectedAction, mappedAction);
@@ -132,9 +131,20 @@ public class FabricInterpreterTest {
     @Test
     public void testEmptyForwardingTreatment() throws Exception {
         TrafficTreatment treatment = DefaultTrafficTreatment.emptyTreatment();
+
         PiAction mappedAction = interpreter.mapTreatment(treatment,
-                                                         FabricConstants.FABRIC_INGRESS_FORWARDING_UNICAST_V4);
-        assertNull(mappedAction);
+                                                         FabricConstants.FABRIC_INGRESS_FORWARDING_ROUTING_V4);
+        PiAction expectedAction = PiAction.builder()
+                .withId(FabricConstants.NOP)
+                .build();
+        assertEquals(expectedAction, mappedAction);
+
+        mappedAction = interpreter.mapTreatment(treatment,
+                                                FabricConstants.FABRIC_INGRESS_FORWARDING_ACL);
+        expectedAction = PiAction.builder()
+                .withId(FabricConstants.FABRIC_INGRESS_FORWARDING_NOP_ACL)
+                .build();
+        assertEquals(expectedAction, mappedAction);
     }
 
     /* Next control block */

@@ -70,6 +70,7 @@ import org.onosproject.net.flow.instructions.ExtensionTreatment;
 import org.onosproject.net.flow.instructions.ExtensionTreatmentType;
 import org.onosproject.net.provider.ProviderId;
 import org.onosproject.openstacknode.api.DefaultOpenstackNode;
+import org.onosproject.openstacknode.api.DpdkConfig;
 import org.onosproject.openstacknode.api.NodeState;
 import org.onosproject.openstacknode.api.OpenstackAuth;
 import org.onosproject.openstacknode.api.OpenstackNode;
@@ -423,7 +424,8 @@ public class DefaultOpenstackNodeHandlerTest {
                 intgBridge.id(),
                 ipAddr,
                 ipAddr,
-                null, null, state, phyIntfs, controllers, null, null, null);
+                null, null, state, phyIntfs, controllers,
+                null, null, null, null);
     }
 
     private static OpenstackNode createGatewayNode(String hostname,
@@ -438,8 +440,8 @@ public class DefaultOpenstackNodeHandlerTest {
                 intgBridge.id(),
                 ipAddr,
                 ipAddr,
-                null, uplinkPort, state,
-                null, null, null, null, null);
+                null, uplinkPort, state, null, null, null, null, null,
+                null);
     }
 
     private static final class TestDevice extends DefaultDevice {
@@ -500,8 +502,9 @@ public class DefaultOpenstackNodeHandlerTest {
                                   Set<OpenstackPhyInterface> phyIntfs,
                                   Set<ControllerInfo> controllers,
                                   OpenstackAuth auth,
-                                  String endPoint,
-                                  OpenstackSshAuth sshAuth) {
+                                  String endpoint,
+                                  OpenstackSshAuth sshAuth,
+                                  DpdkConfig dpdkConfig) {
             super(hostname,
                     type,
                     intgBridge,
@@ -513,8 +516,9 @@ public class DefaultOpenstackNodeHandlerTest {
                     phyIntfs,
                     controllers,
                     auth,
-                    endPoint,
-                    sshAuth);
+                    endpoint,
+                    sshAuth,
+                    dpdkConfig);
         }
 
         @Override

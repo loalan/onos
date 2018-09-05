@@ -15,6 +15,7 @@
  */
 package org.onosproject.segmentrouting.xconnect.impl;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.apache.felix.scr.annotations.Activate;
@@ -71,9 +72,13 @@ import org.slf4j.LoggerFactory;
 import java.io.Serializable;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static org.onlab.util.Tools.groupedThreads;
 
 @Service
 @Component(immediate = true)
@@ -114,6 +119,8 @@ public class XconnectManager implements XconnectService {
     private final MapEventListener<XconnectKey, Set<PortNumber>> xconnectListener = new XconnectMapListener();
     private final DeviceListener deviceListener = new InternalDeviceListener();
 
+    private ExecutorService deviceEventExecutor;
+
     @Activate
     void activate() {
         appId = coreService.registerApplication(APP_NAME);
@@ -137,6 +144,9 @@ public class XconnectManager implements XconnectService {
                 .withSerializer(Serializer.using(serializer.build()))
                 .build();
 
+        deviceEventExecutor = Executors.newSingleThreadScheduledExecutor(
+                groupedThreads("sr-xconnect-device-event", "%d", log));
+
         deviceService.addListener(deviceListener);
 
         log.info("Started");
@@ -147,6 +157,8 @@ public class XconnectManager implements XconnectService {
         xconnectStore.removeListener(xconnectListener);
         deviceService.removeListener(deviceListener);
         codecService.unregisterCodec(XconnectDesc.class);
+
+        deviceEventExecutor.shutdown();
 
         log.info("Stopped");
     }
@@ -181,6 +193,24 @@ public class XconnectManager implements XconnectService {
         );
     }
 
+    @Override
+    public ImmutableMap<XconnectKey, NextObjective> getNext() {
+        if (xconnectNextObjStore != null) {
+            return ImmutableMap.copyOf(xconnectNextObjStore.asJavaMap());
+        } else {
+            return ImmutableMap.of();
+        }
+    }
+
+    @Override
+    public void removeNextId(int nextId) {
+        xconnectNextObjStore.entrySet().forEach(e -> {
+            if (e.getValue().value().id() == nextId) {
+                xconnectNextObjStore.remove(e.getKey());
+            }
+        });
+    }
+
     private class XconnectMapListener implements MapEventListener<XconnectKey, Set<PortNumber>> {
         @Override
         public void event(MapEvent<XconnectKey, Set<PortNumber>> event) {
@@ -207,24 +237,26 @@ public class XconnectManager implements XconnectService {
     private class InternalDeviceListener implements DeviceListener {
         @Override
         public void event(DeviceEvent event) {
-            DeviceId deviceId = event.subject().id();
-            if (!mastershipService.isLocalMaster(deviceId)) {
-                return;
-            }
+            deviceEventExecutor.execute(() -> {
+                DeviceId deviceId = event.subject().id();
+                if (!mastershipService.isLocalMaster(deviceId)) {
+                    return;
+                }
 
-            switch (event.type()) {
-                case DEVICE_ADDED:
-                case DEVICE_AVAILABILITY_CHANGED:
-                case DEVICE_UPDATED:
-                    if (deviceService.isAvailable(deviceId)) {
-                        init(deviceId);
-                    } else {
-                        cleanup(deviceId);
-                    }
-                    break;
-                default:
-                    break;
-            }
+                switch (event.type()) {
+                    case DEVICE_ADDED:
+                    case DEVICE_AVAILABILITY_CHANGED:
+                    case DEVICE_UPDATED:
+                        if (deviceService.isAvailable(deviceId)) {
+                            init(deviceId);
+                        } else {
+                            cleanup(deviceId);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            });
         }
     }
 
@@ -295,9 +327,10 @@ public class XconnectManager implements XconnectService {
                     // To serialize this with kryo
                     (Serializable & Consumer<Objective>) (objective) ->
                             log.debug("XConnect NextObj for {} added", key),
-                    (Serializable & BiConsumer<Objective, ObjectiveError>) (objective, error) ->
-                            log.warn("Failed to add XConnect NextObj for {}: {}", key, error)
-            );
+                    (Serializable & BiConsumer<Objective, ObjectiveError>) (objective, error) -> {
+                        log.warn("Failed to add XConnect NextObj for {}: {}", key, error);
+                        srService.invalidateNextObj(objective.id());
+                    });
             nextObj = nextObjBuilder.add(nextContext);
             flowObjectiveService.next(key.deviceId(), nextObj);
             xconnectNextObjStore.put(key, nextObj);
@@ -402,10 +435,10 @@ public class XconnectManager implements XconnectService {
                 if (nextFuture != null) {
                     nextFuture.complete(error);
                 }
+                srService.invalidateNextObj(objective.id());
             }
         };
-        flowObjectiveService.next(key.deviceId(),
-                (NextObjective) nextObj.copy().remove(context));
+        flowObjectiveService.next(key.deviceId(), nextObj.copy().remove(context));
         xconnectNextObjStore.remove(key);
     }
 

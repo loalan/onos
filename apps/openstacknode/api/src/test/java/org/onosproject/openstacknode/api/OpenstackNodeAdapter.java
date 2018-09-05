@@ -17,11 +17,10 @@ package org.onosproject.openstacknode.api;
 
 import org.onlab.packet.IpAddress;
 import org.onlab.packet.MacAddress;
-import org.onosproject.core.GroupId;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.PortNumber;
 import org.onosproject.net.behaviour.ControllerInfo;
-import org.onosproject.net.group.GroupKey;
+import org.onosproject.openstacknode.api.DpdkConfig.DatapathType;
 
 import java.util.Collection;
 
@@ -70,16 +69,6 @@ public class OpenstackNodeAdapter implements OpenstackNode {
     }
 
     @Override
-    public GroupId gatewayGroupId(OpenstackNode.NetworkMode mode) {
-        return null;
-    }
-
-    @Override
-    public GroupKey gatewayGroupKey(OpenstackNode.NetworkMode mode) {
-        return null;
-    }
-
-    @Override
     public PortNumber tunnelPortNum() {
         return null;
     }
@@ -105,12 +94,27 @@ public class OpenstackNodeAdapter implements OpenstackNode {
     }
 
     @Override
+    public DatapathType datapathType() {
+        return DatapathType.NORMAL;
+    }
+
+    @Override
+    public String socketDir() {
+        return null;
+    }
+
+    @Override
     public PortNumber uplinkPortNum() {
         return null;
     }
 
     @Override
     public OpenstackNode updateState(NodeState newState) {
+        return null;
+    }
+
+    @Override
+    public OpenstackNode updateIntbridge(DeviceId newIntgBridge) {
         return null;
     }
 
@@ -130,7 +134,7 @@ public class OpenstackNodeAdapter implements OpenstackNode {
     }
 
     @Override
-    public String endPoint() {
+    public String endpoint() {
         return null;
     }
 
@@ -141,6 +145,11 @@ public class OpenstackNodeAdapter implements OpenstackNode {
 
     @Override
     public OpenstackSshAuth sshAuthInfo() {
+        return null;
+    }
+
+    @Override
+    public DpdkConfig dpdkConfig() {
         return null;
     }
 }

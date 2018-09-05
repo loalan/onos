@@ -15,12 +15,17 @@
  */
 package org.onosproject.openstacknetworking.util;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Strings;
 import org.onosproject.cfg.ConfigProperty;
 import org.onosproject.net.DeviceId;
+import org.onosproject.net.device.DeviceService;
+import org.onosproject.openstacknetworking.api.Constants.VnicType;
 import org.onosproject.openstacknetworking.api.InstancePort;
 import org.onosproject.openstacknetworking.api.OpenstackNetworkService;
 import org.onosproject.openstacknetworking.api.OpenstackRouterAdminService;
@@ -56,14 +61,20 @@ import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static org.onosproject.net.AnnotationKeys.PORT_NAME;
 import static org.onosproject.openstacknetworking.api.Constants.PCISLOT;
 import static org.onosproject.openstacknetworking.api.Constants.PCI_VENDOR_INFO;
+import static org.onosproject.openstacknetworking.api.Constants.PORT_NAME_PREFIX_VM;
+import static org.onosproject.openstacknetworking.api.Constants.PORT_NAME_VHOST_USER_PREFIX_VM;
+import static org.onosproject.openstacknetworking.api.Constants.UNSUPPORTED_VENDOR;
 import static org.onosproject.openstacknetworking.api.Constants.portNamePrefixMap;
 import static org.openstack4j.core.transport.ObjectMapperSingleton.getContext;
 
@@ -83,7 +94,6 @@ public final class OpenstackNetworkingUtil {
     private static final String DOMAIN_DEFAULT = "default";
     private static final String KEYSTONE_V2 = "v2.0";
     private static final String KEYSTONE_V3 = "v3";
-    private static final String IDENTITY_PATH = "identity/";
     private static final String SSL_TYPE = "SSL";
 
     private static final String PROXY_MODE = "proxy";
@@ -147,22 +157,18 @@ public final class OpenstackNetworkingUtil {
      */
     public static NetFloatingIP associatedFloatingIp(InstancePort port,
                                                      Set<NetFloatingIP> fips) {
-        try {
-            for (NetFloatingIP fip : fips) {
-                if (Strings.isNullOrEmpty(fip.getFixedIpAddress())) {
-                    continue;
-                }
-                if (Strings.isNullOrEmpty(fip.getFloatingIpAddress())) {
-                    continue;
-                }
-                if (fip.getFixedIpAddress().equals(port.ipAddress().toString())) {
-                    return fip;
-                }
+        for (NetFloatingIP fip : fips) {
+            if (Strings.isNullOrEmpty(fip.getFixedIpAddress())) {
+                continue;
             }
-        } catch (NullPointerException e) {
-            log.error("Exception occurred because of {}", e.toString());
-            throw new NullPointerException();
+            if (Strings.isNullOrEmpty(fip.getFloatingIpAddress())) {
+                continue;
+            }
+            if (fip.getFixedIpAddress().equals(port.ipAddress().toString())) {
+                return fip;
+            }
         }
+
         return null;
     }
 
@@ -289,8 +295,6 @@ public final class OpenstackNetworkingUtil {
      * @return interface name
      */
     public static String getIntfNameFromPciAddress(Port port) {
-
-
         if (port.getProfile() == null || port.getProfile().isEmpty()) {
             log.error("Port profile is not found");
             return null;
@@ -320,9 +324,9 @@ public final class OpenstackNetworkingUtil {
         String vendorInfoForPort = String.valueOf(port.getProfile().get(PCI_VENDOR_INFO));
 
         if (!portNamePrefixMap().containsKey(vendorInfoForPort)) {
-            log.error("Failed to retrieve the interface name because of no port name prefix for vendor ID {}",
+            log.warn("Failed to retrieve the interface name because of unsupported prefix for vendor ID {}",
                     vendorInfoForPort);
-            return null;
+            return UNSUPPORTED_VENDOR;
         }
         String portNamePrefix = portNamePrefixMap().get(vendorInfoForPort);
 
@@ -334,6 +338,22 @@ public final class OpenstackNetworkingUtil {
         }
 
         return intfName;
+    }
+
+    /**
+     * Check if the given interface is added to the given device or not.
+     *
+     * @param deviceId device ID
+     * @param intfName interface name
+     * @param deviceService device service
+     * @return true if the given interface is added to the given device or false otherwise
+     */
+    public static boolean hasIntfAleadyInDevice(DeviceId deviceId, String intfName, DeviceService deviceService) {
+        checkNotNull(deviceId);
+        checkNotNull(intfName);
+
+        return deviceService.getPorts(deviceId).stream()
+                .anyMatch(port -> Objects.equals(port.annotations().value(PORT_NAME), intfName));
     }
 
     /**
@@ -360,6 +380,7 @@ public final class OpenstackNetworkingUtil {
                     adminService.addRouterInterface(rIface);
                 }
             } catch (IOException ignore) {
+                log.error("Exception occurred because of {}", ignore.toString());
             }
         });
     }
@@ -388,8 +409,14 @@ public final class OpenstackNetworkingUtil {
         try {
             Object jsonObject = mapper.readValue(jsonString, Object.class);
             return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonObject);
+        } catch (JsonParseException e) {
+            log.debug("JsonParseException caused by {}", e);
+        } catch (JsonMappingException e) {
+            log.debug("JsonMappingException caused by {}", e);
+        } catch (JsonProcessingException e) {
+            log.debug("JsonProcessingException caused by {}", e);
         } catch (IOException e) {
-            log.debug("Json string parsing exception caused by {}", e);
+            log.debug("IOException caused by {}", e);
         }
         return null;
     }
@@ -429,6 +456,36 @@ public final class OpenstackNetworkingUtil {
     }
 
     /**
+     * Compares two router interfaces are equal.
+     * Will be remove this after Openstack4j implements equals.
+     *
+     * @param routerInterface1 router interface
+     * @param routerInterface2 router interface
+     * @return returns true if two router interfaces are equal, false otherwise
+     */
+    public static boolean routerInterfacesEquals(RouterInterface routerInterface1, RouterInterface routerInterface2) {
+        return Objects.equals(routerInterface1.getId(), routerInterface2.getId()) &&
+                Objects.equals(routerInterface1.getPortId(), routerInterface2.getPortId()) &&
+                Objects.equals(routerInterface1.getSubnetId(), routerInterface2.getSubnetId()) &&
+                Objects.equals(routerInterface1.getTenantId(), routerInterface2.getTenantId());
+    }
+
+    public static VnicType vnicType(String portName) {
+        if (portName.startsWith(PORT_NAME_PREFIX_VM) ||
+                portName.startsWith(PORT_NAME_VHOST_USER_PREFIX_VM)) {
+            return VnicType.NORMAL;
+        } else if (isDirectPort(portName)) {
+            return VnicType.DIRECT;
+        } else {
+            return VnicType.UNSUPPORTED;
+        }
+    }
+
+    private static boolean isDirectPort(String portName) {
+        return portNamePrefixMap().values().stream().anyMatch(p -> portName.startsWith(p));
+    }
+
+    /**
      * Builds up and a complete endpoint URL from gateway node.
      *
      * @param node gateway node
@@ -441,17 +498,7 @@ public final class OpenstackNetworkingUtil {
         StringBuilder endpointSb = new StringBuilder();
         endpointSb.append(auth.protocol().name().toLowerCase());
         endpointSb.append("://");
-        endpointSb.append(node.endPoint());
-        endpointSb.append(":");
-        endpointSb.append(auth.port());
-        endpointSb.append("/");
-
-        // in case the version is v3, we need to append identity path into endpoint
-        if (auth.version().equals(KEYSTONE_V3)) {
-            endpointSb.append(IDENTITY_PATH);
-        }
-
-        endpointSb.append(auth.version());
+        endpointSb.append(node.endpoint());
         return endpointSb.toString();
     }
 

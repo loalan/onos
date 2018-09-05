@@ -28,6 +28,17 @@ public final class Constants {
     private Constants() {
     }
 
+    /**
+     * List of valid openstack port types.
+     */
+    public enum VnicType {
+        NORMAL,
+        DIRECT,
+        UNSUPPORTED
+    }
+    public static final String PORT_NAME_PREFIX_VM = "tap";
+    public static final String PORT_NAME_VHOST_USER_PREFIX_VM = "vhu";
+
     public static final String OPENSTACK_NETWORKING_APP_ID = "org.onosproject.openstacknetworking";
 
     public static final String ARP_BROADCAST_MODE = "broadcast";
@@ -46,6 +57,7 @@ public final class Constants {
     public static final String ANNOTATION_PORT_ID = "portId";
     public static final String ANNOTATION_CREATE_TIME = "createTime";
     public static final String ANNOTATION_SEGMENT_ID = "segId";
+    public static final String UNSUPPORTED_VENDOR = "unsupported_vendor";
 
     public static final int PRIORITY_TUNNEL_TAG_RULE = 30000;
     public static final int PRIORITY_FLOATING_INTERNAL = 42000;
@@ -73,6 +85,7 @@ public final class Constants {
     public static final int PRIORITY_ARP_REPLY_RULE = 40000;
     public static final int PRIORITY_ARP_REQUEST_RULE = 40000;
     public static final int PRIORITY_FORCED_ACL_RULE = 50000;
+    public static final int PRIORITY_ICMP_PROBE_RULE = 50000;
 
     // flow table index
     public static final int STAT_INBOUND_TABLE = 0;

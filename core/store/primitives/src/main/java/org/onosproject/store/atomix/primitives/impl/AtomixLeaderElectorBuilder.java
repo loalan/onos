@@ -15,6 +15,8 @@
  */
 package org.onosproject.store.atomix.primitives.impl;
 
+import java.time.Duration;
+
 import io.atomix.core.Atomix;
 import io.atomix.primitive.Recovery;
 import io.atomix.protocols.raft.MultiRaftProtocol;
@@ -46,9 +48,10 @@ public class AtomixLeaderElectorBuilder extends LeaderElectorBuilder {
             .withProtocol(MultiRaftProtocol.builder(group)
                 .withRecoveryStrategy(Recovery.RECOVER)
                 .withMaxRetries(MAX_RETRIES)
+                .withMaxTimeout(Duration.ofMillis(electionTimeoutMillis()))
                 .build())
             .withReadOnly(readOnly())
-            // TODO: Enable caching for LeaderElector in Atomix
+            .withCacheEnabled(relaxedReadConsistency())
             .withSerializer(new AtomixSerializerAdapter(serializer))
             .build()
             .async(), localNodeId);

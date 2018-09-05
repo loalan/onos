@@ -1593,6 +1593,7 @@ public class Dhcp4HandlerImpl implements DhcpHandler, HostProvider {
             switch (event.type()) {
                 case HOST_ADDED:
                 case HOST_UPDATED:
+                case HOST_MOVED:
                     log.trace("Scheduled host event {}", event);
                     hostEventExecutor.execute(() -> hostUpdated(event.subject()));
                     break;
@@ -1618,17 +1619,12 @@ public class Dhcp4HandlerImpl implements DhcpHandler, HostProvider {
     }
 
     private void hostUpdated(Host host, List<DhcpServerInfo> srverInfoList) {
-        DhcpServerInfo serverInfo;
-        Ip4Address targetIp;
-        if (!srverInfoList.isEmpty()) {
-            serverInfo = srverInfoList.get(0);
-            targetIp = serverInfo.getDhcpGatewayIp4().orElse(null);
+        srverInfoList.stream().forEach(serverInfo -> {
+            Ip4Address targetIp = serverInfo.getDhcpGatewayIp4().orElse(null);
             Ip4Address serverIp = serverInfo.getDhcpServerIp4().orElse(null);
-
             if (targetIp == null) {
                 targetIp = serverIp;
             }
-
             if (targetIp != null) {
                 if (host.ipAddresses().contains(targetIp)) {
                     serverInfo.setDhcpConnectMac(host.mac());
@@ -1636,7 +1632,7 @@ public class Dhcp4HandlerImpl implements DhcpHandler, HostProvider {
                     requestDhcpPacket(serverIp);
                 }
             }
-        }
+        });
     }
 
 
@@ -1652,13 +1648,9 @@ public class Dhcp4HandlerImpl implements DhcpHandler, HostProvider {
     }
 
     private void hostRemoved(Host host, List<DhcpServerInfo> serverInfoList) {
-        DhcpServerInfo serverInfo;
-        Ip4Address targetIp;
-        if (!serverInfoList.isEmpty()) {
-            serverInfo = serverInfoList.get(0);
+        serverInfoList.stream().forEach(serverInfo -> {
+            Ip4Address targetIp = serverInfo.getDhcpGatewayIp4().orElse(null);
             Ip4Address serverIp = serverInfo.getDhcpServerIp4().orElse(null);
-            targetIp = serverInfo.getDhcpGatewayIp4().orElse(null);
-
             if (targetIp == null) {
                 targetIp = serverIp;
             }
@@ -1670,7 +1662,7 @@ public class Dhcp4HandlerImpl implements DhcpHandler, HostProvider {
                     cancelDhcpPacket(serverIp);
                 }
             }
-        }
+        });
     }
 
     private void requestDhcpPacket(Ip4Address serverIp) {

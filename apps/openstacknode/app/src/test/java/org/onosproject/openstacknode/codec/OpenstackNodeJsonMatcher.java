@@ -20,6 +20,7 @@ import org.hamcrest.Description;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
 import org.onosproject.net.behaviour.ControllerInfo;
 import org.onosproject.openstacknode.api.Constants;
+import org.onosproject.openstacknode.api.DpdkConfig;
 import org.onosproject.openstacknode.api.OpenstackAuth;
 import org.onosproject.openstacknode.api.OpenstackNode;
 import org.onosproject.openstacknode.api.OpenstackPhyInterface;
@@ -38,9 +39,10 @@ public final class OpenstackNodeJsonMatcher extends TypeSafeDiagnosingMatcher<Js
     private static final String INTEGRATION_BRIDGE = "integrationBridge";
     private static final String STATE = "state";
     private static final String PHYSICAL_INTERFACES = "phyIntfs";
+    private static final String DPDK_CONFIG = "dpdkConfig";
     private static final String CONTROLLERS = "controllers";
     private static final String AUTHENTICATION = "authentication";
-    private static final String END_POINT = "endPoint";
+    private static final String END_POINT = "endpoint";
     private static final String SSH_AUTH = "sshAuth";
 
     private OpenstackNodeJsonMatcher(OpenstackNode node) {
@@ -133,12 +135,19 @@ public final class OpenstackNodeJsonMatcher extends TypeSafeDiagnosingMatcher<Js
             }
         }
 
+        // check dpdk config
+        JsonNode jsonDpdkConfig = jsonNode.get(DPDK_CONFIG);
+        if (jsonDpdkConfig != null) {
+            DpdkConfig dpdkConfig = node.dpdkConfig();
+
+        }
+
         // check endpoint URL
-        JsonNode jsonEndPoint = jsonNode.get(END_POINT);
-        if (jsonEndPoint != null) {
-            String endPoint = node.endPoint();
-            if (!jsonEndPoint.asText().equals(endPoint)) {
-                description.appendText("endpoint URL was " + jsonEndPoint);
+        JsonNode jsonEndpoint = jsonNode.get(END_POINT);
+        if (jsonEndpoint != null) {
+            String endpoint = node.endpoint();
+            if (!jsonEndpoint.asText().equals(endpoint)) {
+                description.appendText("endpoint URL was " + jsonEndpoint);
                 return false;
             }
         }
