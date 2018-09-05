@@ -20,15 +20,17 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.onlab.packet.Ethernet;
 import org.onlab.packet.IPv4;
+import org.onlab.packet.MacAddress;
 import org.onlab.packet.TpPort;
 import org.onlab.packet.UDP;
-import org.onlab.util.ImmutableByteSequence;
 import org.onosproject.net.flow.DefaultFlowRule;
 import org.onosproject.net.flow.DefaultTrafficSelector;
 import org.onosproject.net.flow.DefaultTrafficTreatment;
 import org.onosproject.net.flow.FlowRule;
 import org.onosproject.net.flow.TrafficSelector;
 import org.onosproject.net.flow.TrafficTreatment;
+import org.onosproject.net.flow.criteria.Criterion;
+import org.onosproject.net.flow.criteria.EthCriterion;
 import org.onosproject.net.flowobjective.DefaultForwardingObjective;
 import org.onosproject.net.flowobjective.ForwardingObjective;
 import org.onosproject.net.group.GroupDescription;
@@ -146,7 +148,7 @@ public class FabricForwardingPipelineTest extends FabricPipelinerTest {
                 .matchEthDst(HOST_MAC)
                 .build();
         testSpecificForward(FabricConstants.FABRIC_INGRESS_FORWARDING_BRIDGING,
-                            selector, selector, NEXT_ID_1);
+                            buildExpectedSelector(selector), selector, NEXT_ID_1);
     }
 
     @Test
@@ -167,7 +169,7 @@ public class FabricForwardingPipelineTest extends FabricPipelinerTest {
         TrafficSelector expectedSelector = DefaultTrafficSelector.builder()
                 .matchIPDst(IPV4_UNICAST_ADDR)
                 .build();
-        testSpecificForward(FabricConstants.FABRIC_INGRESS_FORWARDING_UNICAST_V4,
+        testSpecificForward(FabricConstants.FABRIC_INGRESS_FORWARDING_ROUTING_V4,
                             expectedSelector, selector, NEXT_ID_1);
     }
 
@@ -180,7 +182,7 @@ public class FabricForwardingPipelineTest extends FabricPipelinerTest {
         TrafficSelector expectedSelector = DefaultTrafficSelector.builder()
                 .matchIPDst(IPV4_UNICAST_ADDR)
                 .build();
-        testSpecificForward(FabricConstants.FABRIC_INGRESS_FORWARDING_UNICAST_V4,
+        testSpecificForward(FabricConstants.FABRIC_INGRESS_FORWARDING_ROUTING_V4,
                             expectedSelector, selector, null);
     }
 
@@ -195,7 +197,7 @@ public class FabricForwardingPipelineTest extends FabricPipelinerTest {
         TrafficSelector expectedSelector = DefaultTrafficSelector.builder()
                 .matchIPDst(IPV4_MCAST_ADDR)
                 .build();
-        testSpecificForward(FabricConstants.FABRIC_INGRESS_FORWARDING_UNICAST_V4,
+        testSpecificForward(FabricConstants.FABRIC_INGRESS_FORWARDING_ROUTING_V4,
                             expectedSelector, selector, NEXT_ID_1);
     }
 
@@ -209,7 +211,7 @@ public class FabricForwardingPipelineTest extends FabricPipelinerTest {
         TrafficSelector expectedSelector = DefaultTrafficSelector.builder()
                 .matchIPDst(IPV6_UNICAST_ADDR)
                 .build();
-        testSpecificForward(FabricConstants.FABRIC_INGRESS_FORWARDING_UNICAST_V6,
+        testSpecificForward(FabricConstants.FABRIC_INGRESS_FORWARDING_ROUTING_V6,
                             expectedSelector, selector, NEXT_ID_1);
 
     }
@@ -225,7 +227,7 @@ public class FabricForwardingPipelineTest extends FabricPipelinerTest {
         TrafficSelector expectedSelector = DefaultTrafficSelector.builder()
                 .matchIPDst(IPV6_MCAST_ADDR)
                 .build();
-        testSpecificForward(FabricConstants.FABRIC_INGRESS_FORWARDING_UNICAST_V6,
+        testSpecificForward(FabricConstants.FABRIC_INGRESS_FORWARDING_ROUTING_V6,
                             expectedSelector, selector, NEXT_ID_1);
     }
 
@@ -240,8 +242,7 @@ public class FabricForwardingPipelineTest extends FabricPipelinerTest {
                 .matchMplsLabel(MPLS_10)
                 .build();
 
-        PiActionParam nextIdParam = new PiActionParam(FabricConstants.NEXT_ID,
-                                                      ImmutableByteSequence.copyFrom(NEXT_ID_1.byteValue()));
+        PiActionParam nextIdParam = new PiActionParam(FabricConstants.NEXT_ID, NEXT_ID_1);
         PiAction setNextIdAction = PiAction.builder()
                 .withId(FabricConstants.FABRIC_INGRESS_FORWARDING_POP_MPLS_AND_NEXT)
                 .withParameter(nextIdParam)
@@ -260,17 +261,16 @@ public class FabricForwardingPipelineTest extends FabricPipelinerTest {
             // Ref: RoutingRulePopulator.java->revokeIpRuleForRouter
             setNextIdTreatment = DefaultTrafficTreatment.builder().build();
         } else {
-            PiActionParam nextIdParam = new PiActionParam(FabricConstants.NEXT_ID,
-                                                          ImmutableByteSequence.copyFrom(nextId.byteValue()));
+            PiActionParam nextIdParam = new PiActionParam(FabricConstants.NEXT_ID, nextId);
             PiAction.Builder setNextIdAction = PiAction.builder()
                     .withParameter(nextIdParam);
 
             if (expectedTableId.equals(FabricConstants.FABRIC_INGRESS_FORWARDING_BRIDGING)) {
                 setNextIdAction.withId(FabricConstants.FABRIC_INGRESS_FORWARDING_SET_NEXT_ID_BRIDGING);
-            } else if (expectedTableId.equals(FabricConstants.FABRIC_INGRESS_FORWARDING_UNICAST_V4)) {
-                setNextIdAction.withId(FabricConstants.FABRIC_INGRESS_FORWARDING_SET_NEXT_ID_UNICAST_V4);
-            } else if (expectedTableId.equals(FabricConstants.FABRIC_INGRESS_FORWARDING_UNICAST_V6)) {
-                setNextIdAction.withId(FabricConstants.FABRIC_INGRESS_FORWARDING_SET_NEXT_ID_UNICAST_V6);
+            } else if (expectedTableId.equals(FabricConstants.FABRIC_INGRESS_FORWARDING_ROUTING_V4)) {
+                setNextIdAction.withId(FabricConstants.FABRIC_INGRESS_FORWARDING_SET_NEXT_ID_ROUTING_V4);
+            } else if (expectedTableId.equals(FabricConstants.FABRIC_INGRESS_FORWARDING_ROUTING_V6)) {
+                setNextIdAction.withId(FabricConstants.FABRIC_INGRESS_FORWARDING_SET_NEXT_ID_ROUTING_V6);
             }
 
             setNextIdTreatment = DefaultTrafficTreatment.builder()
@@ -316,5 +316,17 @@ public class FabricForwardingPipelineTest extends FabricPipelinerTest {
                 .build();
 
         assertTrue(expectedFlowRule.exactMatch(actualFlowRule));
+    }
+
+    private TrafficSelector buildExpectedSelector(TrafficSelector selector) {
+        TrafficSelector.Builder sbuilder = DefaultTrafficSelector.builder();
+        selector.criteria().forEach(c -> {
+            if (c.type() == Criterion.Type.ETH_DST) {
+                sbuilder.matchEthDstMasked(((EthCriterion) c).mac(), MacAddress.EXACT_MASK);
+            } else {
+                sbuilder.add(c);
+            }
+        });
+        return sbuilder.build();
     }
 }

@@ -66,7 +66,6 @@ import java.util.stream.Collectors;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static org.onlab.util.Tools.groupedThreads;
-import static org.onosproject.segmentrouting.SegmentRoutingManager.INTERNAL_VLAN;
 import static org.slf4j.LoggerFactory.getLogger;
 
 /**
@@ -294,7 +293,7 @@ public class DefaultGroupHandler {
                     for (PortNumber p : devicePortMap.get(link.dst().deviceId())) {
                         dstSet.forEach(dst -> {
                             int edgeLabel = dsKey.destinationSet().getEdgeLabel(dst);
-                            pl.add(new PortLabel(p, edgeLabel));
+                            pl.add(new PortLabel(p, edgeLabel, popVlanInHashGroup(dsKey.destinationSet())));
                         });
                     }
                     addToHashedNextObjective(pl, neighborMac, nextId);
@@ -302,7 +301,7 @@ public class DefaultGroupHandler {
                     // handle only the port that came up
                     dstSet.forEach(dst -> {
                         int edgeLabel = dsKey.destinationSet().getEdgeLabel(dst);
-                        pl.add(new PortLabel(link.src().port(), edgeLabel));
+                        pl.add(new PortLabel(link.src().port(), edgeLabel, popVlanInHashGroup(dsKey.destinationSet())));
                     });
                     addToHashedNextObjective(pl, neighborMac, nextId);
                 }
@@ -311,7 +310,7 @@ public class DefaultGroupHandler {
                 List<PortLabel> pl = Lists.newArrayList();
                 dstSet.forEach(dst -> {
                     int edgeLabel = dsKey.destinationSet().getEdgeLabel(dst);
-                    pl.add(new PortLabel(link.src().port(), edgeLabel));
+                    pl.add(new PortLabel(link.src().port(), edgeLabel, popVlanInHashGroup(dsKey.destinationSet())));
                 });
                 removeFromHashedNextObjective(pl, neighborMac, nextId);
             }
@@ -329,15 +328,17 @@ public class DefaultGroupHandler {
     private class PortLabel {
         PortNumber port;
         int edgeLabel;
+        boolean popVlan;
 
-        PortLabel(PortNumber port, int edgeLabel) {
+        PortLabel(PortNumber port, int edgeLabel, boolean popVlan) {
             this.port = port;
             this.edgeLabel = edgeLabel;
+            this.popVlan = popVlan;
         }
 
         @Override
         public String toString() {
-            return port.toString() + "/" + String.valueOf(edgeLabel);
+            return port.toString() + "/" + String.valueOf(edgeLabel) + (popVlan ? "/popVlan" : "");
         }
     }
 
@@ -358,7 +359,7 @@ public class DefaultGroupHandler {
         // if needed by the switch pipeline. Since hashed next-hops are always to
         // other neighboring routers, there is no subnet assigned on those ports.
         TrafficSelector.Builder metabuilder = DefaultTrafficSelector.builder();
-        metabuilder.matchVlanId(INTERNAL_VLAN);
+        metabuilder.matchVlanId(srManager.getDefaultInternalVlan());
         NextObjective.Builder nextObjBuilder = DefaultNextObjective.builder()
                 .withId(nextId)
                 .withType(NextObjective.Type.HASHED)
@@ -370,6 +371,9 @@ public class DefaultGroupHandler {
             tBuilder.setOutput(pl.port)
                 .setEthDst(dstMac)
                 .setEthSrc(nodeMacAddr);
+            if (pl.popVlan) {
+                tBuilder.popVlan();
+            }
             if (pl.edgeLabel != DestinationSet.NO_EDGE_LABEL) {
                 tBuilder.pushMpls()
                     .copyTtlOut()
@@ -384,10 +388,11 @@ public class DefaultGroupHandler {
         ObjectiveContext context = new DefaultObjectiveContext(
                 (objective) -> log.debug("addToHash port/label {} addedTo "
                         + "NextObj {} on {}", portLabels, nextId, deviceId),
-                (objective, error) ->
-                        log.warn("addToHash failed to add port/label {} to"
-                                + " NextObj {} on {}: {}", portLabels,
-                                 nextId, deviceId, error));
+                (objective, error) -> {
+                    log.warn("addToHash failed to add port/label {} to NextObj {} on {}: {}",
+                            portLabels, nextId, deviceId, error);
+                    srManager.invalidateNextObj(objective.id());
+                });
         NextObjective nextObjective = nextObjBuilder.addToExisting(context);
         flowObjectiveService.next(deviceId, nextObjective);
     }
@@ -415,6 +420,9 @@ public class DefaultGroupHandler {
             tBuilder.setOutput(pl.port)
                 .setEthDst(dstMac)
                 .setEthSrc(nodeMacAddr);
+            if (pl.popVlan) {
+                tBuilder.popVlan();
+            }
             if (pl.edgeLabel != DestinationSet.NO_EDGE_LABEL) {
                 tBuilder.pushMpls()
                     .copyTtlOut()
@@ -428,9 +436,11 @@ public class DefaultGroupHandler {
         ObjectiveContext context = new DefaultObjectiveContext(
                 (objective) -> log.debug("port/label {} removedFrom NextObj"
                         + " {} on {}", portLabels, nextId, deviceId),
-                (objective, error) ->
-                log.warn("port/label {} failed to removeFrom NextObj {} on "
-                        + "{}: {}", portLabels, nextId, deviceId, error));
+                (objective, error) -> {
+                    log.warn("port/label {} failed to removeFrom NextObj {} on {}: {}",
+                            portLabels, nextId, deviceId, error);
+                    srManager.invalidateNextObj(objective.id());
+                });
         NextObjective nextObjective = nextObjBuilder.removeFromExisting(context);
         flowObjectiveService.next(deviceId, nextObjective);
     }
@@ -504,7 +514,7 @@ public class DefaultGroupHandler {
                         + "hops:{} ..adding {}", targetSw, destSw, nextId,
                         currNeighbors, diff);
             }
-            boolean suc = updateAllPortsToNextHop(diff, edgeLabel, nextId,
+            boolean suc = updateAllPortsToNextHop(diff, edgeLabel, nextId, popVlanInHashGroup(dskey.destinationSet()),
                                                   revoke);
             if (suc) {
                 // to update neighbor set with changes made
@@ -581,7 +591,7 @@ public class DefaultGroupHandler {
 
             // new next hops should be added
             boolean suc = updateAllPortsToNextHop(Sets.difference(newNhops, currNhops),
-                                                  edgeLabel, nextId, false);
+                                                  edgeLabel, nextId, popVlanInHashGroup(key.destinationSet()), false);
             if (suc) {
                 currNhops.addAll(newNhops);
                 currDstNextHops.put(dstSw, currNhops); // this is only a local change
@@ -607,13 +617,14 @@ public class DefaultGroupHandler {
      * @param neighbors set of neighbor device ids
      * @param edgeLabel MPLS label to use in buckets
      * @param nextId the nextObjective to change
+     * @param popVlan this hash group bucket shuold includes a popVlan action
      * @param revoke true if buckets need to be removed, false if they need to
      *          be added
      * @return true if successful in adding or removing buckets for all ports
      *                  to the neighbors
      */
     private boolean updateAllPortsToNextHop(Set<DeviceId> neighbors, int edgeLabel,
-                                         int nextId, boolean revoke) {
+                                         int nextId, boolean popVlan, boolean revoke) {
         for (DeviceId neighbor : neighbors) {
             MacAddress neighborMac;
             try {
@@ -631,7 +642,7 @@ public class DefaultGroupHandler {
                 return false;
             }
             List<PortLabel> pl = Lists.newArrayList();
-            portsToNeighbor.forEach(p -> pl.add(new PortLabel(p, edgeLabel)));
+            portsToNeighbor.forEach(p -> pl.add(new PortLabel(p, edgeLabel, popVlan)));
             if (revoke) {
                 log.debug("updateAllPortsToNextHops in device {}: Removing Bucket(s) "
                         + "with Port/Label:{} to next object id {}",
@@ -710,10 +721,11 @@ public class DefaultGroupHandler {
             (objective) -> log.debug("port {} successfully {} NextObj {} on {}",
                                      port, (portUp) ? "addedTo" : "removedFrom",
                                      nextId, deviceId),
-            (objective, error) ->
-            log.warn("port {} failed to {} NextObj {} on {}: {}",
-                     port, (portUp) ? "addTo" : "removeFrom",
-                     nextId, deviceId, error));
+            (objective, error) -> {
+                log.warn("port {} failed to {} NextObj {} on {}: {}",
+                        port, (portUp) ? "addTo" : "removeFrom", nextId, deviceId, error);
+                srManager.invalidateNextObj(objective.id());
+            });
 
         NextObjective nextObj = (portUp) ? nextObjBuilder.addToExisting(context)
                                          : nextObjBuilder.removeFromExisting(context);
@@ -984,10 +996,14 @@ public class DefaultGroupHandler {
                                     .setMpls(MplsLabel.mplsLabel(edgeLabel));
                         }
                     }
-                    if ((ds.getTypeOfDstSet() == DestinationSet.DestinationSetType.SWAP_NOT_BOS) ||
-                         (ds.getTypeOfDstSet() == DestinationSet.DestinationSetType.POP_NOT_BOS)) {
-                        tBuilder.setVlanId(srManager.PSEUDOWIRE_VLAN);
+
+                    // Set VLAN ID for PW transport. Otherwise pop vlan
+                    if (!popVlanInHashGroup(ds)) {
+                        tBuilder.setVlanId(srManager.getPwTransportVlan());
+                    } else {
+                        tBuilder.popVlan();
                     }
+
                     tBuilder.setOutput(sp);
                     nextObjBuilder.addTreatment(tBuilder.build());
                     treatmentAdded = true;
@@ -1017,10 +1033,11 @@ public class DefaultGroupHandler {
                 (objective) ->
                 log.debug("createGroupsFromDestinationSet installed "
                         + "NextObj {} on {}", nextId, deviceId),
-                (objective, error) ->
-                log.warn("createGroupsFromDestinationSet failed to install"
-                        + " NextObj {} on {}: {}", nextId, deviceId, error)
-                );
+                (objective, error) -> {
+                    log.warn("createGroupsFromDestinationSet failed to install NextObj {} on {}: {}",
+                            nextId, deviceId, error);
+                    srManager.invalidateNextObj(objective.id());
+                });
         NextObjective nextObj = nextObjBuilder.add(context);
         log.debug(".. createGroupsFromDestinationSet: Submitted "
                 + "next objective {} in device {}", nextId, deviceId);
@@ -1078,10 +1095,11 @@ public class DefaultGroupHandler {
             (objective) ->
                 log.debug("createBroadcastGroupFromVlan installed "
                         + "NextObj {} on {}", nextId, deviceId),
-            (objective, error) ->
-                log.warn("createBroadcastGroupFromVlan failed to install"
-                        + " NextObj {} on {}: {}", nextId, deviceId, error)
-            );
+            (objective, error) -> {
+                log.warn("createBroadcastGroupFromVlan failed to install NextObj {} on {}: {}",
+                        nextId, deviceId, error);
+                srManager.invalidateNextObj(objective.id());
+            });
         NextObjective nextObj = nextObjBuilder.add(context);
         flowObjectiveService.next(deviceId, nextObj);
         log.debug("createBcastGroupFromVlan: Submitted next objective {} "
@@ -1129,10 +1147,11 @@ public class DefaultGroupHandler {
                 (objective) ->
                         log.debug("removeBroadcastGroupFromVlan removed "
                                           + "NextObj {} on {}", nextId, deviceId),
-                (objective, error) ->
-                        log.warn("removeBroadcastGroupFromVlan failed to remove "
-                                         + " NextObj {} on {}: {}", nextId, deviceId, error)
-        );
+                (objective, error) -> {
+                    log.warn("removeBroadcastGroupFromVlan failed to remove NextObj {} on {}: {}",
+                            nextId, deviceId, error);
+                    srManager.invalidateNextObj(objective.id());
+                });
         NextObjective nextObj = nextObjBuilder.remove(context);
         flowObjectiveService.next(deviceId, nextObj);
         log.debug("removeBcastGroupFromVlan: Submited next objective {} in device {}",
@@ -1179,10 +1198,10 @@ public class DefaultGroupHandler {
             (objective) ->
                 log.debug("createGroupFromPort installed "
                         + "NextObj {} on {}", nextId, deviceId),
-            (objective, error) ->
-                log.warn("createGroupFromPort failed to install"
-                        + " NextObj {} on {}: {}", nextId, deviceId, error)
-            );
+            (objective, error) -> {
+                log.warn("createGroupFromPort failed to install NextObj {} on {}: {}", nextId, deviceId, error);
+                srManager.invalidateNextObj(objective.id());
+            });
         NextObjective nextObj = nextObjBuilder.add(context);
         flowObjectiveService.next(deviceId, nextObj);
         log.debug("createGroupFromPort: Submited next objective {} in device {} "
@@ -1221,9 +1240,11 @@ public class DefaultGroupHandler {
             ObjectiveContext context = new DefaultObjectiveContext(
                     (objective) -> log.debug("removePortNextObjective removes NextObj {} on {}",
                                              portNextObjId, deviceId),
-                    (objective, error) ->
-                            log.warn("removePortNextObjective failed to remove NextObj {} on {}: {}",
-                                     portNextObjId, deviceId, error));
+                    (objective, error) -> {
+                        log.warn("removePortNextObjective failed to remove NextObj {} on {}: {}",
+                                portNextObjId, deviceId, error);
+                        srManager.invalidateNextObj(objective.id());
+                    });
             NextObjective nextObjective = nextObjBuilder.remove(context);
             log.info("**removePortNextObjective: Submitted "
                              + "next objective {} in device {}",
@@ -1254,9 +1275,10 @@ public class DefaultGroupHandler {
             ObjectiveContext context = new DefaultObjectiveContext(
                     (objective) -> log.debug("RemoveGroup removes NextObj {} on {}",
                             objectiveId, deviceId),
-                    (objective, error) ->
-                            log.warn("RemoveGroup failed to remove NextObj {} on {}: {}",
-                                    objectiveId, deviceId, error));
+                    (objective, error) -> {
+                        log.warn("RemoveGroup failed to remove NextObj {} on {}: {}", objectiveId, deviceId, error);
+                        srManager.invalidateNextObj(objective.id());
+                    });
             NextObjective nextObjective = nextObjBuilder.remove(context);
             log.info("**removeGroup: Submited "
                     + "next objective {} in device {}",
@@ -1294,9 +1316,10 @@ public class DefaultGroupHandler {
                 (objective) ->
                         log.info("removeGroupFromPort installed "
                                           + "NextObj {} on {}", nextId, deviceId),
-                (objective, error) ->
-                        log.warn("removeGroupFromPort failed to install"
-                                         + " NextObj {} on {}: {}", nextId, deviceId, error)
+                (objective, error) -> {
+                    log.warn("removeGroupFromPort failed to install NextObj {} on {}: {}", nextId, deviceId, error);
+                    srManager.invalidateNextObj(objective.id());
+                }
         );
         NextObjective nextObj = nextObjBuilder.remove(context);
         flowObjectiveService.next(deviceId, nextObj);
@@ -1367,9 +1390,10 @@ public class DefaultGroupHandler {
         ObjectiveContext context = new DefaultObjectiveContext(
                 (objective) -> log.debug("port {} successfully updated NextObj {} on {}",
                                          portNumber, nextId, deviceId),
-                (objective, error) ->
-                        log.warn("port {} failed to updated NextObj {} on {}: {}",
-                                 portNumber, nextId, deviceId, error));
+                (objective, error) -> {
+                    log.warn("port {} failed to updated NextObj {} on {}: {}", portNumber, nextId, deviceId, error);
+                    srManager.invalidateNextObj(objective.id());
+                });
 
         flowObjectiveService.next(deviceId, nextObjBuilder.modify(context));
     }
@@ -1401,9 +1425,10 @@ public class DefaultGroupHandler {
         ObjectiveContext context = new DefaultObjectiveContext(
                 (objective) -> log.debug("port {} successfully removedFrom NextObj {} on {}",
                                          portNum, nextId, deviceId),
-                (objective, error) ->
-                        log.warn("port {} failed to removedFrom NextObj {} on {}: {}",
-                                 portNum, nextId, deviceId, error));
+                (objective, error) -> {
+                    log.warn("port {} failed to removedFrom NextObj {} on {}: {}", portNum, nextId, deviceId, error);
+                    srManager.invalidateNextObj(objective.id());
+                });
 
         if (install) {
             flowObjectiveService.next(deviceId, nextObjBuilder.addToExisting(context));
@@ -1470,7 +1495,7 @@ public class DefaultGroupHandler {
                     log.trace("bkt-corr: dsNextObjStore for device {}: {}",
                               deviceId, dsKey, next);
                     TrafficSelector.Builder metabuilder = DefaultTrafficSelector.builder();
-                    metabuilder.matchVlanId(INTERNAL_VLAN);
+                    metabuilder.matchVlanId(srManager.getDefaultInternalVlan());
                     NextObjective.Builder nextObjBuilder = DefaultNextObjective.builder()
                             .withId(nid)
                             .withType(NextObjective.Type.HASHED)
@@ -1533,4 +1558,15 @@ public class DefaultGroupHandler {
         }
     }
 
+    /**
+     * Determines whether the hash group bucket should include a popVlan action.
+     * We don't popVlan for PW.
+     *
+     * @param ds destination set
+     * @return true if VLAN needs to be popped
+     */
+    private boolean popVlanInHashGroup(DestinationSet ds) {
+        return (ds.getTypeOfDstSet() != DestinationSet.DestinationSetType.SWAP_NOT_BOS) &&
+                (ds.getTypeOfDstSet() != DestinationSet.DestinationSetType.POP_NOT_BOS);
+    }
 }

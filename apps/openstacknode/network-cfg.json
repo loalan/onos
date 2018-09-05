@@ -18,8 +18,36 @@
               {
                 "network": "oamnetwork",
                 "intf": "eth4"
+              },
+              {
+                "network": "datanetwork",
+                "intf": "dpdk0"
               }
             ],
+            "sshAuth" : {
+              "id": "id",
+              "password" : "password"
+            },
+            "dpdkConfig" : {
+              "datapathType" : "netdev",
+              "socketDir" : "/var/lib/libvirt/qemu",
+              "dpdkIntfs" : [
+                {
+                  "intf" : "dpdk0",
+                  "mtu" : 1500,
+                  "deviceName" : "br-int",
+                  "pciAddress" : "0000:85:00.0",
+                  "type" : "dpdk"
+                },
+                {
+                  "intf" : "dpdk1",
+                  "mtu" : 1500,
+                  "deviceName" : "br-tun",
+                  "pciAddress" : "0000:85:00.1",
+                  "type" : "dpdk"
+                }
+              ]
+            },
             "controllers": [
               {
                 "ip": "10.10.10.2",
@@ -57,7 +85,7 @@
             "hostname" : "controller",
             "type" : "CONTROLLER",
             "managementIp" : "172.16.130.10",
-            "endPoint" : "keystone-endpoint-url",
+            "endpoint" : "keystone-endpoint-url",
             "authentication" : {
               "version" : "v2.0",
               "port" : 35357,

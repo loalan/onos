@@ -75,6 +75,7 @@ import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.flow.TrafficSelector;
 import org.onosproject.net.flow.TrafficTreatment;
 import org.onosproject.net.flowobjective.FlowObjectiveService;
+import org.onosproject.net.flowobjective.NextObjective;
 import org.onosproject.net.host.HostEvent;
 import org.onosproject.net.host.HostListener;
 import org.onosproject.net.host.HostProbingService;
@@ -251,6 +252,16 @@ public class SegmentRoutingManager implements SegmentRoutingService {
             label = "Program flows and groups to pop and route double tagged hosts")
     boolean routeDoubleTaggedHosts = false;
 
+    private static final int DEFAULT_INTERNAL_VLAN = 4094;
+    @Property(name = "defaultInternalVlan", intValue = DEFAULT_INTERNAL_VLAN,
+            label = "internal vlan assigned by default to unconfigured ports")
+    private int defaultInternalVlan = DEFAULT_INTERNAL_VLAN;
+
+    private static final int PW_TRANSPORT_VLAN = 4090;
+    @Property(name = "pwTransportVlan", intValue = PW_TRANSPORT_VLAN,
+            label = "vlan used for transport of pseudowires between switches")
+    private int pwTransportVlan = PW_TRANSPORT_VLAN;
+
     ArpHandler arpHandler = null;
     IcmpHandler icmpHandler = null;
     IpHandler ipHandler = null;
@@ -369,14 +380,6 @@ public class SegmentRoutingManager implements SegmentRoutingService {
      * Segment Routing App ID.
      */
     public static final String APP_NAME = "org.onosproject.segmentrouting";
-    /**
-     * The default VLAN ID assigned to the interfaces without subnet config.
-     */
-    public static final VlanId INTERNAL_VLAN = VlanId.vlanId((short) 4094);
-    /**
-     * The Vlan id used to transport pseudowire traffic across the network.
-     */
-    public static final VlanId PSEUDOWIRE_VLAN = VlanId.vlanId((short) 4093);
 
     /**
      * Minumum and maximum value of dummy VLAN ID to be allocated.
@@ -470,6 +473,11 @@ public class SegmentRoutingManager implements SegmentRoutingService {
                                       "staleLinkAge", "15000");
         compCfgService.preSetProperty("org.onosproject.net.host.impl.HostManager",
                                       "allowDuplicateIps", "false");
+        // For P4 switches
+        compCfgService.preSetProperty("org.onosproject.net.flow.impl.FlowRuleManager",
+                                      "fallbackFlowPollFrequency", "5");
+        compCfgService.preSetProperty("org.onosproject.net.group.impl.GroupManager",
+                                      "fallbackGroupPollFrequency", "5");
         compCfgService.registerProperties(getClass());
         modified(context);
 
@@ -646,6 +654,94 @@ public class SegmentRoutingManager implements SegmentRoutingService {
                 hostHandler.revokeAllDoubleTaggedHost();
             }
         }
+
+        String strDefaultInternalVlan = Tools.get(properties, "defaultInternalVlan");
+        int defIntVlan = Integer.parseInt(strDefaultInternalVlan);
+        if (defIntVlan != defaultInternalVlan) {
+            if (canUseVlanId(defIntVlan)) {
+                log.warn("Default internal vlan value changed from {} to {}.. "
+                        + "re-programming filtering rules, but NOT any groups already "
+                        + "created with the former value", defaultInternalVlan, defIntVlan);
+                VlanId oldDefIntVlan = VlanId.vlanId((short) defaultInternalVlan);
+                defaultInternalVlan = defIntVlan;
+                routingRulePopulator
+                .updateSpecialVlanFilteringRules(true, oldDefIntVlan,
+                                                 VlanId.vlanId((short) defIntVlan));
+            } else {
+                log.warn("Cannot change default internal vlan to unusable "
+                        + "value {}", defIntVlan);
+            }
+        }
+
+        String strPwTxpVlan = Tools.get(properties, "pwTransportVlan");
+        int pwTxpVlan = Integer.parseInt(strPwTxpVlan);
+        if (pwTxpVlan != pwTransportVlan) {
+            if (canUseVlanId(pwTxpVlan)) {
+                log.warn("Pseudowire transport vlan value changed from {} to {}.. "
+                        + "re-programming filtering rules, but NOT any groups already "
+                        + "created with the former value", pwTransportVlan,
+                        pwTxpVlan);
+                VlanId oldPwTxpVlan = VlanId.vlanId((short) pwTransportVlan);
+                pwTransportVlan = pwTxpVlan;
+                routingRulePopulator
+                .updateSpecialVlanFilteringRules(false, oldPwTxpVlan,
+                                                 VlanId.vlanId((short) pwTxpVlan));
+            } else {
+                log.warn("Cannot change pseudowire transport vlan to unusable "
+                        + "value {}", pwTxpVlan);
+            }
+        }
+
+    }
+
+    /**
+     * Returns true if given vlan id is not being used in the system currently,
+     * either as one of the default system wide vlans or as one of the
+     * configured interface vlans.
+     *
+     * @param vlanId given vlan id
+     * @return true if vlan is not currently in use
+     */
+    public boolean canUseVlanId(int vlanId) {
+        if (vlanId >= 4095 || vlanId <= 1) {
+            log.error("Vlan id {} value is not in valid range 2 <--> 4094",
+                      vlanId);
+            return false;
+        }
+
+       VlanId vid = VlanId.vlanId((short) vlanId);
+        if (getDefaultInternalVlan().equals(vid) || getPwTransportVlan().equals(vid)) {
+            log.warn("Vlan id {} value is already in use system-wide. "
+                    + "DefaultInternalVlan:{} PwTransportVlan:{} ", vlanId,
+                     getDefaultInternalVlan(), getPwTransportVlan());
+            return false;
+        }
+
+        if (interfaceService.inUse(vid)) {
+            log.warn("Vlan id {} value is already in use on a configured "
+                    + "interface in the system", vlanId);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Returns the VlanId assigned internally by default to unconfigured ports.
+     *
+     * @return the default internal vlan id
+     */
+    public VlanId getDefaultInternalVlan() {
+        return VlanId.vlanId((short) defaultInternalVlan);
+    }
+
+    /**
+     * Returns the Vlan id used to transport pseudowire traffic across the
+     * network.
+     *
+     * @return the pseudowire transport vlan id
+     */
+    public VlanId getPwTransportVlan() {
+        return VlanId.vlanId((short) pwTransportVlan);
     }
 
     @Override
@@ -761,11 +857,81 @@ public class SegmentRoutingManager implements SegmentRoutingService {
     }
 
     @Override
-    public ImmutableMap<DestinationSetNextObjectiveStoreKey, NextNeighbors> getDestinationSet() {
+    public ImmutableMap<DestinationSetNextObjectiveStoreKey, NextNeighbors> getDstNextObjStore() {
         if (dsNextObjStore != null) {
             return ImmutableMap.copyOf(dsNextObjStore.entrySet());
         } else {
             return ImmutableMap.of();
+        }
+    }
+
+    @Override
+    public ImmutableMap<VlanNextObjectiveStoreKey, Integer> getVlanNextObjStore() {
+        if (vlanNextObjStore != null) {
+            return ImmutableMap.copyOf(vlanNextObjStore.entrySet());
+        } else {
+            return ImmutableMap.of();
+        }
+    }
+
+    @Override
+    public ImmutableMap<PortNextObjectiveStoreKey, Integer> getPortNextObjStore() {
+        if (portNextObjStore != null) {
+            return ImmutableMap.copyOf(portNextObjStore.entrySet());
+        } else {
+            return ImmutableMap.of();
+        }
+    }
+
+    @Override
+    public ImmutableMap<String, NextObjective> getPwInitNext() {
+        if (l2TunnelHandler != null) {
+            return l2TunnelHandler.getInitNext();
+        } else {
+            return ImmutableMap.of();
+        }
+    }
+
+    @Override
+    public ImmutableMap<String, NextObjective> getPwTermNext() {
+        if (l2TunnelHandler != null) {
+            return l2TunnelHandler.getTermNext();
+        } else {
+            return ImmutableMap.of();
+        }
+    }
+
+    @Override
+    public void invalidateNextObj(int nextId) {
+        if (dsNextObjStore != null) {
+            dsNextObjStore.entrySet().forEach(e -> {
+                if (e.getValue().nextId() == nextId) {
+                    dsNextObjStore.remove(e.getKey());
+                }
+            });
+        }
+        if (vlanNextObjStore != null) {
+            vlanNextObjStore.entrySet().forEach(e -> {
+                if (e.getValue() == nextId) {
+                    vlanNextObjStore.remove(e.getKey());
+                }
+            });
+        }
+        if (portNextObjStore != null) {
+            portNextObjStore.entrySet().forEach(e -> {
+                if (e.getValue() == nextId) {
+                    portNextObjStore.remove(e.getKey());
+                }
+            });
+        }
+        if (mcastHandler != null) {
+            mcastHandler.removeNextId(nextId);
+        }
+        if (l2TunnelHandler != null) {
+            l2TunnelHandler.removeNextId(nextId);
+        }
+        if (xconnectService != null) {
+            xconnectService.removeNextId(nextId);
         }
     }
 
@@ -789,7 +955,7 @@ public class SegmentRoutingManager implements SegmentRoutingService {
 
     @Override
     public Map<McastStoreKey, Integer> getMcastNextIds(IpAddress mcastIp) {
-        return mcastHandler.getMcastNextIds(mcastIp);
+        return mcastHandler.getNextIds(mcastIp);
     }
 
     @Override
@@ -1141,6 +1307,13 @@ public class SegmentRoutingManager implements SegmentRoutingService {
                                  event.type(), ((Device) event.subject()).id());
                         processDeviceAdded((Device) event.subject());
                     } else {
+                        if (event.type() == DeviceEvent.Type.DEVICE_ADDED) {
+                            // Note: For p4 devices, the device will be added but unavailable at the beginning.
+                            //       The device will later on being marked as available once the pipeline is pushed
+                            //       to the device.
+                            log.info("** DEVICE ADDED but unavailable. Ignore");
+                            return;
+                        }
                         log.info(" ** DEVICE DOWN Processing device event {}"
                                 + " for unavailable device {}",
                                  event.type(), ((Device) event.subject()).id());

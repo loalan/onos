@@ -15,6 +15,8 @@
  */
 package org.onosproject.openstacktelemetry.api;
 
+import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 
 /**
@@ -40,11 +42,18 @@ public interface StatsFlowRuleAdminService {
     void createStatFlowRule(StatsFlowRule statFlowRule);
 
     /**
-     * Gets a set of flow infos.
+     * Gets a set of flow infos collected from overlay network.
      *
      * @return a set of flow infos
      */
-    Set<FlowInfo> getFlowInfos();
+    Set<FlowInfo> getOverlayFlowInfos();
+
+    /**
+     * Gets a set of flow infos collected from underlay network.
+     *
+     * @return a set of flow infos
+     */
+    Set<FlowInfo> getUnderlayFlowInfos();
 
     /**
      * Deletes stat flow rule.
@@ -52,4 +61,12 @@ public interface StatsFlowRuleAdminService {
      * @param statFlowRule stat flow rule for a VM
      */
     void deleteStatFlowRule(StatsFlowRule statFlowRule);
+
+    /**
+     * Gets a map of flow information.
+     *
+     * @return a map of flow infos
+     */
+    Map<String, Queue<FlowInfo>> getFlowInfoMap();
+
 }
