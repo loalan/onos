@@ -44,15 +44,15 @@ public class SpectrumPipelineProgrammable
         extends AbstractP4RuntimePipelineProgrammable
         implements PiPipelineProgrammable {
 
-//    private static final PiPipeconfId FABRIC_PIPECONF_ID =
-//            new PiPipeconfId("org.onosproject.pipelines.fabric");
+    private static final PiPipeconfId MLNX_FABRIC_PIPECONF_ID =
+            new PiPipeconfId("org.onosproject.pipelines.fabric-mlnx");
 
     @Override
     public ByteBuffer createDeviceDataBuffer(PiPipeconf pipeconf) {
-//        checkArgument(pipeconf.id().equals(FABRIC_PIPECONF_ID),
-//                      format("Cannot program Spectrum device with a pipeconf " +
-//                                     "other than '%s' (found '%s')",
-//                             FABRIC_PIPECONF_ID, pipeconf.id()));
+        checkArgument(pipeconf.id().equals(MLNX_FABRIC_PIPECONF_ID),
+                      format("Cannot program Spectrum device with a pipeconf " +
+                                     "other than '%s' (found '%s')",
+                                     MLNX_FABRIC_PIPECONF_ID, pipeconf.id()));
         
         List<ByteBuffer> buffers = Lists.newLinkedList();
         try {
@@ -73,9 +73,8 @@ public class SpectrumPipelineProgrammable
 
     @Override
     public Optional<PiPipeconf> getDefaultPipeconf() {
-//        return handler().get(PiPipeconfService.class)
-//                .getPipeconf(FABRIC_PIPECONF_ID);
-        return Optional.empty();
+        return handler().get(PiPipeconfService.class)
+                .getPipeconf(MLNX_FABRIC_PIPECONF_ID);
     }
     
     private ByteBuffer extensionBuffer(PiPipeconf pipeconf, ExtensionType extType) {

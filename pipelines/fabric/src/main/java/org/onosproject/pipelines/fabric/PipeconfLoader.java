@@ -138,7 +138,6 @@ public class PipeconfLoader {
                 case BMV2:
                     return buildBmv2Pipeconf(profile, platform);
                 case SPECTRUM:
-                    log.warn("=====SPECTRUM =buildPipeconfFromPath========= " + path);
                     return buildSpectrumPipeconf(profile, platform);                    
                 case TOFINO:
                     return buildTofinoPipeconf(profile, platform);
@@ -167,6 +166,8 @@ public class PipeconfLoader {
         DefaultPiPipeconf.Builder builder = basePipeconfBuilder(
                 profile, platform, p4InfoUrl, Bmv2FabricInterpreter.class)
                 .addExtension(ExtensionType.BMV2_JSON, bmv2JsonUrl);
+        
+        
         // Add IntProgrammable behaviour for INT-enabled profiles.
         if (profile.endsWith(INT_PROFILE_SUFFIX) || profile.endsWith(FULL_PROFILE_SUFFIX)) {
             builder.addBehaviour(IntProgrammable.class, IntProgrammableImpl.class);
@@ -176,7 +177,6 @@ public class PipeconfLoader {
 
     private static PiPipeconf buildSpectrumPipeconf(String profile, String platform)
             throws FileNotFoundException {
-        log.warn("-------SPECTRUM: " + profile + "/" + platform);
         final URL spectrumBinUrl = PipeconfLoader.class.getResource(format(
                 P4C_RES_BASE_PATH + SPECTRUM_BIN, profile, SPECTRUM, platform));
         final URL p4InfoUrl = PipeconfLoader.class.getResource(format(
