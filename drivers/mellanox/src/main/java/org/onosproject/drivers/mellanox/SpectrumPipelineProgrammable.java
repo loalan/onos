@@ -85,9 +85,8 @@ public class SpectrumPipelineProgrammable
         try {
             byte[] bytes = IOUtils.toByteArray(pipeconf.extension(extType).get());
             // Length of the extension + bytes.
-            return ByteBuffer.allocate(Integer.BYTES + bytes.length)
+            return ByteBuffer.allocate(bytes.length)
                     .order(ByteOrder.LITTLE_ENDIAN)
-                    .putInt(bytes.length)
                     .put(bytes);
         } catch (IOException ex) {
             log.warn("Unable to read extension {} from pipeconf {}: {}",
