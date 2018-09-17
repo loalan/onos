@@ -22,7 +22,7 @@ import org.onosproject.p4runtime.api.P4RuntimeEventSubject;
 /**
  * Default implementation of arbitration in P4Runtime.
  */
-class ArbitrationResponse implements P4RuntimeEventSubject {
+final class ArbitrationResponse implements P4RuntimeEventSubject {
 
     private DeviceId deviceId;
     private boolean isMaster;

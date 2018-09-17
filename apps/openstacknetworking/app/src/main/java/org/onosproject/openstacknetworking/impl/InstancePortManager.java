@@ -32,8 +32,10 @@ import org.onosproject.cluster.NodeId;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.event.ListenerRegistry;
+import org.onosproject.net.DeviceId;
 import org.onosproject.net.Host;
 import org.onosproject.net.HostLocation;
+import org.onosproject.net.PortNumber;
 import org.onosproject.net.host.HostEvent;
 import org.onosproject.net.host.HostListener;
 import org.onosproject.net.host.HostService;
@@ -84,6 +86,8 @@ public class InstancePortManager
     private static final String ERR_NULL_MAC_ADDRESS = "MAC address cannot be null";
     private static final String ERR_NULL_IP_ADDRESS = "IP address cannot be null";
     private static final String ERR_NULL_NETWORK_ID = "Network ID cannot be null";
+    private static final String ERR_NULL_DEVICE_ID = "Device ID cannot be null";
+    private static final String ERR_NULL_PORT_NUMBER = "Port number cannot be null";
 
     private static final String ERR_IN_USE = " still in use";
 
@@ -211,6 +215,17 @@ public class InstancePortManager
     }
 
     @Override
+    public InstancePort instancePort(DeviceId deviceId, PortNumber portNumber) {
+        checkNotNull(deviceId, ERR_NULL_DEVICE_ID);
+        checkNotNull(portNumber, ERR_NULL_PORT_NUMBER);
+
+        return instancePortStore.instancePorts().stream()
+                .filter(port -> port.deviceId().equals(deviceId))
+                .filter(port -> port.portNumber().equals(portNumber))
+                .findFirst().orElse(null);
+    }
+
+    @Override
     public Set<InstancePort> instancePorts() {
         Set<InstancePort> ports = instancePortStore.instancePorts();
 
@@ -316,6 +331,16 @@ public class InstancePortManager
                     }
                     break;
                 case HOST_REMOVED:
+
+                    // in case the instance port cannot be found in the store,
+                    // this indicates that the instance port was removed due to
+                    // the removal of openstack port; in some cases, openstack
+                    // port removal message arrives before ovs port removal message
+                    if (instancePortStore.instancePort(instPort.portId()) == null) {
+                        log.debug("instance port was removed before ovs port removal");
+                        break;
+                    }
+
                     // we will remove instance port from persistent store,
                     // only if we receive port removal signal from neutron.
                     // by default, we update the instance port state to INACTIVE
