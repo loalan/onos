@@ -87,7 +87,7 @@ public class PiPipeconfWatchdogManager
     private static final long SECONDS = 1000L;
     // Long enough to allow for network delay (e.g. to transfer large pipeline
     // binaries over slow network).
-    private static final long PIPECONF_SET_TIMEOUT = 60; // Seconds.
+    private static final long PIPECONF_SET_TIMEOUT = 90; // Seconds.
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     private PiPipeconfMappingStore pipeconfMappingStore;

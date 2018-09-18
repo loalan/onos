@@ -1,0 +1,2642 @@
+{
+  "program" : "output/fabric/fabric.p4i",
+  "__meta__" : {
+    "version" : [2, 7],
+    "compiler" : "https://github.com/p4lang/p4c"
+  },
+  "header_types" : [
+    {
+      "name" : "scalars_0",
+      "id" : 0,
+      "fields" : [
+        ["fabric_port", 9, false, false],
+        ["tmp", 32, false, false],
+        ["tmp_0", 32, false, false],
+        ["filtering_tmp_0", 1, false, false],
+        ["fabric_metadata_t.fwd_type", 3, false, false],
+        ["fabric_metadata_t.next_id", 32, false, false],
+        ["fabric_metadata_t.pop_vlan_when_packet_in", 1, false, false],
+        ["fabric_metadata_t.is_multicast", 1, false, false],
+        ["fabric_metadata_t.is_controller_packet_out", 1, false, false],
+        ["fabric_metadata_t.clone_to_cpu", 1, false, false],
+        ["fabric_metadata_t.ip_proto", 8, false, false],
+        ["fabric_metadata_t.l4_src_port", 16, false, false],
+        ["fabric_metadata_t.l4_dst_port", 16, false, false],
+        ["_padding_0", 7, false, false]
+      ]
+    },
+    {
+      "name" : "Ethernet_h",
+      "id" : 1,
+      "fields" : [
+        ["dst_addr", 48, false, true],
+        ["src_addr", 48, false, true],
+        ["ether_type", 16, false, true]
+      ]
+    },
+    {
+      "name" : "Vlan_h",
+      "id" : 2,
+      "fields" : [
+        ["pcp", 3, false, true],
+        ["dei", 1, false, true],
+        ["vlan_id", 12, false, true],
+        ["ether_type", 16, false, true]
+      ]
+    },
+    {
+      "name" : "Mpls_h",
+      "id" : 3,
+      "fields" : [
+        ["label", 20, false, false],
+        ["tc", 3, false, false],
+        ["bos", 1, false, false],
+        ["ttl", 8, false, false]
+      ]
+    },
+    {
+      "name" : "IPv4_h",
+      "id" : 4,
+      "fields" : [
+        ["version", 4, false, false],
+        ["ihl", 4, false, false],
+        ["diffserv", 6, false, true],
+        ["ecn", 2, false, true],
+        ["total_len", 16, false, true],
+        ["identification", 16, false, false],
+        ["flags", 3, false, false],
+        ["frag_offset", 13, false, false],
+        ["ttl", 8, false, true],
+        ["protocol", 8, false, true],
+        ["hdr_checksum", 16, false, false],
+        ["src_addr", 32, false, true],
+        ["dst_addr", 32, false, true]
+      ]
+    },
+    {
+      "name" : "Arp_h",
+      "id" : 5,
+      "fields" : [
+        ["hw_type", 16, false, true],
+        ["proto_type", 16, false, false],
+        ["hw_addr_len", 8, false, false],
+        ["proto_addr_len", 8, false, false],
+        ["opcode", 16, false, false],
+        ["sender_hw_addr", 48, false, false],
+        ["sender_proto_addr", 32, false, false],
+        ["target_hw_addr", 48, false, false],
+        ["target_proto_addr", 32, false, false]
+      ]
+    },
+    {
+      "name" : "Tcp_h",
+      "id" : 6,
+      "fields" : [
+        ["src_port", 16, false, true],
+        ["dst_port", 16, false, true],
+        ["seq_no", 32, false, false],
+        ["ack_no", 32, false, false],
+        ["data_offset", 4, false, false],
+        ["res", 4, false, false],
+        ["flags", 8, false, true],
+        ["window", 16, false, false],
+        ["checksum", 16, false, false],
+        ["urgent_ptr", 16, false, false]
+      ]
+    },
+    {
+      "name" : "Udp_h",
+      "id" : 7,
+      "fields" : [
+        ["src_port", 16, false, true],
+        ["dst_port", 16, false, true],
+        ["length", 16, false, false],
+        ["checksum", 16, false, false]
+      ]
+    },
+    {
+      "name" : "Icmp_h",
+      "id" : 8,
+      "fields" : [
+        ["type", 8, false, true],
+        ["code", 8, false, true],
+        ["checksum", 16, false, false],
+        ["identifier", 16, false, false],
+        ["sequence_number", 16, false, false],
+        ["timestamp", 64, false, false]
+      ]
+    },
+    {
+      "name" : "packet_out_header_t",
+      "id" : 9,
+      "fields" : [
+        ["egress_port", 9, false, false],
+        ["_pad", 7, false, false]
+      ]
+    },
+    {
+      "name" : "packet_in_header_t",
+      "id" : 10,
+      "fields" : [
+        ["ingress_port", 9, false, false],
+        ["_pad", 7, false, false]
+      ]
+    },
+    {
+      "name" : "standard_metadata",
+      "id" : 11,
+      "fields" : [
+        ["METADATA_DEI", 1, false, false],
+        ["METADATA_PCP", 3, false, false],
+        ["METADATA_VLAN_ID", 12, false, false],
+        ["METADATA_INNER_DMAC", 48, false, true],
+        ["METADATA_INNER_SMAC", 48, false, true],
+        ["METADATA_INNER_DEI", 1, false, false],
+        ["METADATA_INNER_PCP", 3, false, false],
+        ["METADATA_INNER_ETHERTYPE", 16, false, true],
+        ["METADATA_INNER_SIP", 32, false, false],
+        ["METADATA_INNER_DIP", 32, false, false],
+        ["METADATA_INNER_DSCP", 6, false, false],
+        ["METADATA_INNER_ECN", 2, false, false],
+        ["METADATA_INNER_IP_PROTO", 8, false, false],
+        ["METADATA_INNER_SIPV6", 128, false, false],
+        ["METADATA_INNER_DIPV6", 128, false, false],
+        ["METADATA_INNER_L4_DESTINATION_PORT", 16, false, false],
+        ["METADATA_INNER_L4_SOURCE_PORT", 16, false, false],
+        ["METADATA_GRE_KEY", 1, false, false],
+        ["METADATA_VNI_KEY", 1, false, false],
+        ["METADATA_GRE_PROTOCOL", 1, false, false],
+        ["METADATA_MPLS_LABEL_ID_1", 20, false, false],
+        ["METADATA_MPLS_LABEL_ID_2", 20, false, false],
+        ["METADATA_MPLS_LABEL_ID_3", 20, false, false],
+        ["METADATA_MPLS_LABEL_ID_4", 20, false, false],
+        ["METADATA_MPLS_LABEL_ID_5", 20, false, false],
+        ["METADATA_MPLS_LABEL_ID_6", 20, false, false],
+        ["METADATA_EXP", 3, false, false],
+        ["METADATA_BOS", 1, false, false],
+        ["METADATA_MPLS_TTL", 8, false, false],
+        ["METADATA_RW_PCP", 1, false, false],
+        ["METADATA_L2_DMAC_TYPE", 2, false, true],
+        ["METADATA_DMAC_IS_UC", 1, false, false],
+        ["METADATA_VLAN_TAGGED", 1, false, false],
+        ["vlan_tag_valid", 1, false, true],
+        ["ingress_port", 9, false, true],
+        ["egress_spec", 9, false, true],
+        ["egress_port", 9, false, true],
+        ["METADATA_RW_DSCP", 1, false, false],
+        ["METADATA_IP_FRAGMENTED", 1, false, false],
+        ["METADATA_IP_DONT_FRAGMENT", 1, false, false],
+        ["METADATA_IP_FRAGMENT_NOT_FIRST", 1, false, false],
+        ["ip_ok", 1, false, true],
+        ["METADATA_IS_ARP", 1, false, false],
+        ["METADATA_IP_OPT", 1, false, false],
+        ["METADATA_IS_IP_V4", 1, false, false],
+        ["METADATA_L3_TYPE", 2, false, false],
+        ["METADATA_TTL_OK", 1, false, false],
+        ["METADATA_L4_OK", 1, false, false],
+        ["METADATA_L4_TYPE", 3, false, false],
+        ["METADATA_COLOR", 2, false, false],
+        ["METADATA_DISCARD_STATE", 1, false, false],
+        ["METADATA_IS_TRAPPED", 1, false, false],
+        ["ingress_rif", 32, false, true],
+        ["egress_rif", 32, false, true],
+        ["vrf_id", 8, false, true],
+        ["METADATA_IPV6_EXTENSION_HEADER_EXISTS", 1, false, false],
+        ["METADATA_REG", 12, false, true],
+        ["METADATA_INNER_VLAN_VALID", 1, false, false],
+        ["METADATA_INNER_IP_OK", 1, false, false],
+        ["METADATA_INNER_L3_TYPE", 2, false, false],
+        ["METADATA_INNER_L4_OK", 1, false, false],
+        ["METADATA_INNER_TTL_OK", 1, false, false],
+        ["METADATA_TUNNEL_TYPE", 1, false, false],
+        ["METADATA_GRE_KEY_EXISTS", 1, false, false],
+        ["METADATA_TUNNEL_NVE_TYPE", 1, false, false],
+        ["METADATA_L4_TYPE_EXTENDED", 1, false, false],
+        ["METADATA_IS_MPLS", 1, false, false],
+        ["METADATA_MPLS_LABELS_VALID", 6, false, false],
+        ["METADATA_RW_EXP", 1, false, false],
+        ["_padding", 2, false, false]
+      ]
+    }
+  ],
+  "headers" : [
+    {
+      "name" : "scalars",
+      "id" : 0,
+      "header_type" : "scalars_0",
+      "metadata" : true,
+      "pi_omit" : true
+    },
+    {
+      "name" : "standard_metadata",
+      "id" : 1,
+      "header_type" : "standard_metadata",
+      "metadata" : true,
+      "pi_omit" : true
+    },
+    {
+      "name" : "ethernet",
+      "id" : 2,
+      "header_type" : "Ethernet_h",
+      "metadata" : false,
+      "pi_omit" : true,
+      "mlnx_predefined" : true
+    },
+    {
+      "name" : "vlan_tag",
+      "id" : 3,
+      "header_type" : "Vlan_h",
+      "metadata" : false,
+      "pi_omit" : true,
+      "mlnx_predefined" : true
+    },
+    {
+      "name" : "inner_vlan_tag",
+      "id" : 4,
+      "header_type" : "Vlan_h",
+      "metadata" : false,
+      "pi_omit" : true,
+      "mlnx_predefined" : true
+    },
+    {
+      "name" : "mpls",
+      "id" : 5,
+      "header_type" : "Mpls_h",
+      "metadata" : false,
+      "pi_omit" : true,
+      "mlnx_predefined" : true
+    },
+    {
+      "name" : "ipv4",
+      "id" : 6,
+      "header_type" : "IPv4_h",
+      "metadata" : false,
+      "pi_omit" : true,
+      "mlnx_predefined" : true
+    },
+    {
+      "name" : "arp",
+      "id" : 7,
+      "header_type" : "Arp_h",
+      "metadata" : false,
+      "pi_omit" : true,
+      "mlnx_predefined" : true
+    },
+    {
+      "name" : "tcp",
+      "id" : 8,
+      "header_type" : "Tcp_h",
+      "metadata" : false,
+      "pi_omit" : true,
+      "mlnx_predefined" : true
+    },
+    {
+      "name" : "udp",
+      "id" : 9,
+      "header_type" : "Udp_h",
+      "metadata" : false,
+      "pi_omit" : true,
+      "mlnx_predefined" : true
+    },
+    {
+      "name" : "icmp",
+      "id" : 10,
+      "header_type" : "Icmp_h",
+      "metadata" : false,
+      "pi_omit" : true,
+      "mlnx_predefined" : true
+    },
+    {
+      "name" : "packet_out",
+      "id" : 11,
+      "header_type" : "packet_out_header_t",
+      "metadata" : false,
+      "pi_omit" : true,
+      "mlnx_predefined" : false
+    },
+    {
+      "name" : "packet_in",
+      "id" : 12,
+      "header_type" : "packet_in_header_t",
+      "metadata" : false,
+      "pi_omit" : true,
+      "mlnx_predefined" : false
+    }
+  ],
+  "header_stacks" : [],
+  "header_union_types" : [],
+  "header_unions" : [],
+  "header_union_stacks" : [],
+  "field_lists" : [],
+  "errors" : [
+    ["NoError", 0],
+    ["PacketTooShort", 1],
+    ["NoMatch", 2],
+    ["StackOutOfBounds", 3],
+    ["HeaderTooShort", 4],
+    ["ParserTimeout", 5],
+    ["IPv4IncorrectVersion", 6],
+    ["IPv4OptionsNotSupported", 7]
+  ],
+  "enums" : [
+    {
+      "name" : "HashAlgorithm",
+      "entries" : [
+        ["crc16", 2],
+        ["crc16_custom", 3],
+        ["crc32", 0],
+        ["crc32_custom", 1],
+        ["identity", 5],
+        ["random", 4]
+      ]
+    }
+  ],
+  "parsers" : [
+    {
+      "name" : "parser",
+      "id" : 0,
+      "init_state" : "start",
+      "parse_states" : [
+        {
+          "name" : "start",
+          "id" : 0,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["scalars", "fabric_port"]
+                },
+                {
+                  "type" : "field",
+                  "value" : ["standard_metadata", "ingress_port"]
+                }
+              ],
+              "op" : "set"
+            }
+          ],
+          "transitions" : [
+            {
+              "type" : "hexstr",
+              "value" : "0x00ff",
+              "mask" : null,
+              "next_state" : "parse_packet_out"
+            },
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : "parse_ethernet"
+            }
+          ],
+          "transition_key" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "fabric_port"]
+            }
+          ]
+        },
+        {
+          "name" : "parse_packet_out",
+          "id" : 1,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "packet_out"
+                }
+              ],
+              "op" : "extract"
+            }
+          ],
+          "transitions" : [
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : "parse_ethernet"
+            }
+          ],
+          "transition_key" : []
+        },
+        {
+          "name" : "parse_ethernet",
+          "id" : 2,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "ethernet"
+                }
+              ],
+              "op" : "extract"
+            }
+          ],
+          "transitions" : [
+            {
+              "type" : "hexstr",
+              "value" : "0x9100",
+              "mask" : null,
+              "next_state" : "parse_vlan_tag"
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x88a8",
+              "mask" : null,
+              "next_state" : "parse_vlan_tag"
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x8100",
+              "mask" : null,
+              "next_state" : "parse_vlan_tag"
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x8847",
+              "mask" : null,
+              "next_state" : "parse_mpls"
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x0806",
+              "mask" : null,
+              "next_state" : "parse_arp"
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x0800",
+              "mask" : null,
+              "next_state" : "parse_ipv4"
+            },
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : null
+            }
+          ],
+          "transition_key" : [
+            {
+              "type" : "field",
+              "value" : ["ethernet", "ether_type"]
+            }
+          ]
+        },
+        {
+          "name" : "parse_vlan_tag",
+          "id" : 3,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "vlan_tag"
+                }
+              ],
+              "op" : "extract"
+            }
+          ],
+          "transitions" : [
+            {
+              "type" : "hexstr",
+              "value" : "0x8100",
+              "mask" : null,
+              "next_state" : "parse_inner_vlan_tag"
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x0806",
+              "mask" : null,
+              "next_state" : "parse_arp"
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x0800",
+              "mask" : null,
+              "next_state" : "parse_ipv4"
+            },
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : null
+            }
+          ],
+          "transition_key" : [
+            {
+              "type" : "field",
+              "value" : ["vlan_tag", "ether_type"]
+            }
+          ]
+        },
+        {
+          "name" : "parse_inner_vlan_tag",
+          "id" : 4,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "inner_vlan_tag"
+                }
+              ],
+              "op" : "extract"
+            }
+          ],
+          "transitions" : [
+            {
+              "type" : "hexstr",
+              "value" : "0x0806",
+              "mask" : null,
+              "next_state" : "parse_arp"
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x0800",
+              "mask" : null,
+              "next_state" : "parse_ipv4"
+            },
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : null
+            }
+          ],
+          "transition_key" : [
+            {
+              "type" : "field",
+              "value" : ["vlan_tag", "ether_type"]
+            }
+          ]
+        },
+        {
+          "name" : "parse_mpls",
+          "id" : 5,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "mpls"
+                }
+              ],
+              "op" : "extract"
+            }
+          ],
+          "transitions" : [
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : null
+            }
+          ],
+          "transition_key" : []
+        },
+        {
+          "name" : "parse_ipv4",
+          "id" : 6,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "ipv4"
+                }
+              ],
+              "op" : "extract"
+            }
+          ],
+          "transitions" : [
+            {
+              "type" : "hexstr",
+              "value" : "0x06",
+              "mask" : null,
+              "next_state" : "parse_tcp"
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x11",
+              "mask" : null,
+              "next_state" : "parse_udp"
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x01",
+              "mask" : null,
+              "next_state" : "parse_icmp"
+            },
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : null
+            }
+          ],
+          "transition_key" : [
+            {
+              "type" : "field",
+              "value" : ["ipv4", "protocol"]
+            }
+          ]
+        },
+        {
+          "name" : "parse_arp",
+          "id" : 7,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "arp"
+                }
+              ],
+              "op" : "extract"
+            }
+          ],
+          "transitions" : [
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : null
+            }
+          ],
+          "transition_key" : []
+        },
+        {
+          "name" : "parse_tcp",
+          "id" : 8,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "tcp"
+                }
+              ],
+              "op" : "extract"
+            }
+          ],
+          "transitions" : [
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : null
+            }
+          ],
+          "transition_key" : []
+        },
+        {
+          "name" : "parse_udp",
+          "id" : 9,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "udp"
+                }
+              ],
+              "op" : "extract"
+            }
+          ],
+          "transitions" : [
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : null
+            }
+          ],
+          "transition_key" : []
+        },
+        {
+          "name" : "parse_icmp",
+          "id" : 10,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "icmp"
+                }
+              ],
+              "op" : "extract"
+            }
+          ],
+          "transitions" : [
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : null
+            }
+          ],
+          "transition_key" : []
+        }
+      ]
+    }
+  ],
+  "parse_vsets" : [],
+  "deparsers" : [
+    {
+      "name" : "deparser",
+      "id" : 0,
+      "source_info" : {
+        "filename" : "p4src/fabric/include/parser.p4",
+        "line" : 137,
+        "column" : 8,
+        "source_fragment" : "FabricDeparser"
+      },
+      "order" : ["packet_in", "ethernet", "vlan_tag", "inner_vlan_tag", "mpls", "arp", "ipv4", "tcp", "udp", "icmp"]
+    }
+  ],
+  "meter_arrays" : [],
+  "counter_arrays" : [
+    {
+      "name" : "FabricIngress.port_counters_control.egress_port_counter",
+      "id" : 0,
+      "source_info" : {
+        "filename" : "p4src/fabric/include/control/port_counter.p4",
+        "line" : 23,
+        "column" : 38,
+        "source_fragment" : "egress_port_counter"
+      },
+      "size" : 511,
+      "is_direct" : false
+    },
+    {
+      "name" : "FabricIngress.port_counters_control.ingress_port_counter",
+      "id" : 1,
+      "source_info" : {
+        "filename" : "p4src/fabric/include/control/port_counter.p4",
+        "line" : 43,
+        "column" : 38,
+        "source_fragment" : "ingress_port_counter"
+      },
+      "size" : 511,
+      "is_direct" : false
+    }
+  ],
+  "register_arrays" : [],
+  "calculations" : [],
+  "learn_lists" : [],
+  "actions" : [
+    {
+      "name" : "NoAction",
+      "id" : 0,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "NoAction",
+      "id" : 1,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "NoAction",
+      "id" : 2,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "NoAction",
+      "id" : 3,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "NoAction",
+      "id" : 4,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "FabricIngress.filtering.drop",
+      "id" : 5,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "mlnx_drop",
+          "parameters" : [],
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/filtering.p4",
+            "line" : 29,
+            "column" : 8,
+            "source_fragment" : "mlnx_drop()"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "FabricIngress.filtering.nop_ingress_port_vlan",
+      "id" : 6,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "mlnx_nop",
+          "parameters" : [],
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/filtering.p4",
+            "line" : 33,
+            "column" : 8,
+            "source_fragment" : "mlnx_nop()"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "FabricIngress.filtering.set_vlan",
+      "id" : 7,
+      "runtime_data" : [
+        {
+          "name" : "new_vlan_id",
+          "bitwidth" : 12
+        }
+      ],
+      "primitives" : []
+    },
+    {
+      "name" : "FabricIngress.filtering.push_internal_vlan",
+      "id" : 8,
+      "runtime_data" : [
+        {
+          "name" : "new_vlan_id",
+          "bitwidth" : 12
+        }
+      ],
+      "primitives" : []
+    },
+    {
+      "name" : "FabricIngress.filtering.set_forwarding_type",
+      "id" : 9,
+      "runtime_data" : [
+        {
+          "name" : "fwd_type",
+          "bitwidth" : 3
+        }
+      ],
+      "primitives" : []
+    },
+    {
+      "name" : "FabricIngress.forwarding.set_next_id_bridging",
+      "id" : 10,
+      "runtime_data" : [
+        {
+          "name" : "next_id",
+          "bitwidth" : 32
+        }
+      ],
+      "primitives" : []
+    },
+    {
+      "name" : "FabricIngress.forwarding.pop_mpls_and_next",
+      "id" : 11,
+      "runtime_data" : [
+        {
+          "name" : "next_id",
+          "bitwidth" : 32
+        }
+      ],
+      "primitives" : []
+    },
+    {
+      "name" : "FabricIngress.forwarding.set_next_id_routing_v4",
+      "id" : 12,
+      "runtime_data" : [
+        {
+          "name" : "next_id",
+          "bitwidth" : 32
+        }
+      ],
+      "primitives" : []
+    },
+    {
+      "name" : "FabricIngress.forwarding.set_next_id_acl",
+      "id" : 13,
+      "runtime_data" : [
+        {
+          "name" : "next_id",
+          "bitwidth" : 32
+        }
+      ],
+      "primitives" : []
+    },
+    {
+      "name" : "FabricIngress.forwarding.punt_to_cpu",
+      "id" : 14,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "trap_to_controller",
+          "parameters" : [],
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/forwarding.p4",
+            "line" : 99,
+            "column" : 8,
+            "source_fragment" : "trap_to_controller()"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "FabricIngress.forwarding.clone_to_cpu",
+      "id" : 15,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "trap_to_controller",
+          "parameters" : [],
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/forwarding.p4",
+            "line" : 104,
+            "column" : 8,
+            "source_fragment" : "trap_to_controller()"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "FabricIngress.forwarding.drop",
+      "id" : 16,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "mlnx_drop",
+          "parameters" : [],
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/forwarding.p4",
+            "line" : 109,
+            "column" : 8,
+            "source_fragment" : "mlnx_drop()"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "FabricIngress.forwarding.nop_acl",
+      "id" : 17,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "mlnx_nop",
+          "parameters" : [],
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/forwarding.p4",
+            "line" : 114,
+            "column" : 9,
+            "source_fragment" : "mlnx_nop()"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "FabricIngress.next.output_simple",
+      "id" : 18,
+      "runtime_data" : [
+        {
+          "name" : "port_num",
+          "bitwidth" : 9
+        }
+      ],
+      "primitives" : []
+    },
+    {
+      "name" : "FabricIngress.next.set_vlan_output",
+      "id" : 19,
+      "runtime_data" : [
+        {
+          "name" : "new_vlan_id",
+          "bitwidth" : 12
+        },
+        {
+          "name" : "port_num",
+          "bitwidth" : 9
+        }
+      ],
+      "primitives" : []
+    },
+    {
+      "name" : "FabricIngress.next.nop",
+      "id" : 20,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "mlnx_nop",
+          "parameters" : [],
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/next.p4",
+            "line" : 58,
+            "column" : 4,
+            "source_fragment" : "mlnx_nop()"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "FabricIngress.next.set_vlan",
+      "id" : 21,
+      "runtime_data" : [
+        {
+          "name" : "new_vlan_id",
+          "bitwidth" : 12
+        }
+      ],
+      "primitives" : []
+    },
+    {
+      "name" : "FabricIngress.next.l3_routing_simple",
+      "id" : 22,
+      "runtime_data" : [
+        {
+          "name" : "port_num",
+          "bitwidth" : 9
+        },
+        {
+          "name" : "smac",
+          "bitwidth" : 48
+        },
+        {
+          "name" : "dmac",
+          "bitwidth" : 48
+        }
+      ],
+      "primitives" : []
+    },
+    {
+      "name" : "FabricIngress.next.mpls_routing_v4_simple",
+      "id" : 23,
+      "runtime_data" : [
+        {
+          "name" : "port_num",
+          "bitwidth" : 9
+        },
+        {
+          "name" : "smac",
+          "bitwidth" : 48
+        },
+        {
+          "name" : "dmac",
+          "bitwidth" : 48
+        },
+        {
+          "name" : "label",
+          "bitwidth" : 20
+        }
+      ],
+      "primitives" : []
+    },
+    {
+      "name" : "FabricIngress.next.mpls_routing_v6_simple",
+      "id" : 24,
+      "runtime_data" : [
+        {
+          "name" : "port_num",
+          "bitwidth" : 9
+        },
+        {
+          "name" : "smac",
+          "bitwidth" : 48
+        },
+        {
+          "name" : "dmac",
+          "bitwidth" : 48
+        },
+        {
+          "name" : "label",
+          "bitwidth" : 20
+        }
+      ],
+      "primitives" : []
+    },
+    {
+      "name" : "FabricIngress.next.l3_routing_vlan",
+      "id" : 25,
+      "runtime_data" : [
+        {
+          "name" : "port_num",
+          "bitwidth" : 9
+        },
+        {
+          "name" : "smac",
+          "bitwidth" : 48
+        },
+        {
+          "name" : "dmac",
+          "bitwidth" : 48
+        },
+        {
+          "name" : "new_vlan_id",
+          "bitwidth" : 12
+        }
+      ],
+      "primitives" : []
+    },
+    {
+      "name" : "FabricIngress.next.l3_routing_hashed",
+      "id" : 26,
+      "runtime_data" : [
+        {
+          "name" : "port_num",
+          "bitwidth" : 9
+        },
+        {
+          "name" : "smac",
+          "bitwidth" : 48
+        },
+        {
+          "name" : "dmac",
+          "bitwidth" : 48
+        }
+      ],
+      "primitives" : []
+    },
+    {
+      "name" : "FabricIngress.next.mpls_routing_v4_hashed",
+      "id" : 27,
+      "runtime_data" : [
+        {
+          "name" : "port_num",
+          "bitwidth" : 9
+        },
+        {
+          "name" : "smac",
+          "bitwidth" : 48
+        },
+        {
+          "name" : "dmac",
+          "bitwidth" : 48
+        },
+        {
+          "name" : "label",
+          "bitwidth" : 20
+        }
+      ],
+      "primitives" : []
+    },
+    {
+      "name" : "FabricIngress.next.mpls_routing_v6_hashed",
+      "id" : 28,
+      "runtime_data" : [
+        {
+          "name" : "port_num",
+          "bitwidth" : 9
+        },
+        {
+          "name" : "smac",
+          "bitwidth" : 48
+        },
+        {
+          "name" : "dmac",
+          "bitwidth" : 48
+        },
+        {
+          "name" : "label",
+          "bitwidth" : 20
+        }
+      ],
+      "primitives" : []
+    },
+    {
+      "name" : "act",
+      "id" : 29,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "filtering_tmp_0"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "b2d",
+                  "left" : null,
+                  "right" : {
+                    "type" : "bool",
+                    "value" : true
+                  }
+                }
+              }
+            }
+          ],
+          "mlnx_assign" : true
+        }
+      ]
+    },
+    {
+      "name" : "act_0",
+      "id" : 30,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "filtering_tmp_0"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "b2d",
+                  "left" : null,
+                  "right" : {
+                    "type" : "bool",
+                    "value" : false
+                  }
+                }
+              }
+            }
+          ],
+          "mlnx_assign" : true
+        }
+      ]
+    },
+    {
+      "name" : "act_1",
+      "id" : 31,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "fabric_metadata_t.fwd_type"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x07",
+              "bitwidth" : 3
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/../define.p4",
+            "line" : 57,
+            "column" : 31,
+            "source_fragment" : "7; ..."
+          },
+          "mlnx_assign" : true
+        }
+      ]
+    },
+    {
+      "name" : "act_2",
+      "id" : 32,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "&",
+                  "left" : {
+                    "type" : "field",
+                    "value" : ["standard_metadata", "egress_port"]
+                  },
+                  "right" : {
+                    "type" : "hexstr",
+                    "value" : "0xffffffff",
+                    "bitwidth" : 32
+                  }
+                }
+              }
+            }
+          ],
+          "mlnx_assign" : true
+        },
+        {
+          "op" : "count",
+          "parameters" : [
+            {
+              "type" : "counter_array",
+              "value" : "FabricIngress.port_counters_control.egress_port_counter"
+            },
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/port_counter.p4",
+            "line" : 46,
+            "column" : 8,
+            "source_fragment" : "egress_port_counter.count((bit<32>)standard_metadata.egress_port)"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_0"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "&",
+                  "left" : {
+                    "type" : "field",
+                    "value" : ["standard_metadata", "ingress_port"]
+                  },
+                  "right" : {
+                    "type" : "hexstr",
+                    "value" : "0xffffffff",
+                    "bitwidth" : 32
+                  }
+                }
+              }
+            }
+          ],
+          "mlnx_assign" : true
+        },
+        {
+          "op" : "count",
+          "parameters" : [
+            {
+              "type" : "counter_array",
+              "value" : "FabricIngress.port_counters_control.ingress_port_counter"
+            },
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_0"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/port_counter.p4",
+            "line" : 47,
+            "column" : 8,
+            "source_fragment" : "ingress_port_counter.count((bit<32>)standard_metadata.ingress_port)"
+          }
+        }
+      ]
+    }
+  ],
+  "pipelines" : [
+    {
+      "name" : "control_in_port",
+      "id" : 0,
+      "source_info" : {
+        "filename" : "p4src/fabric/fabric.p4",
+        "line" : 32,
+        "column" : 8,
+        "source_fragment" : "FabricIngress"
+      },
+      "init_table" : "FabricIngress.filtering.ingress_port_vlan",
+      "tables" : [
+        {
+          "name" : "FabricIngress.filtering.ingress_port_vlan",
+          "id" : 0,
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/filtering.p4",
+            "line" : 63,
+            "column" : 10,
+            "source_fragment" : "ingress_port_vlan"
+          },
+          "mlnx_flex" : false,
+          "key" : [
+            {
+              "match_type" : "exact",
+              "name" : "standard_metadata.ingress_port",
+              "target" : ["standard_metadata", "ingress_port"],
+              "mask" : null
+            },
+            {
+              "match_type" : "exact",
+              "name" : "hdr.vlan_tag.is_valid",
+              "target" : ["vlan_tag", "$valid$"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.vlan_tag.vlan_id",
+              "target" : ["vlan_tag", "vlan_id"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "ternary",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [8, 7, 5, 6],
+          "actions" : ["FabricIngress.filtering.push_internal_vlan", "FabricIngress.filtering.set_vlan", "FabricIngress.filtering.drop", "FabricIngress.filtering.nop_ingress_port_vlan"],
+          "base_default_next" : null,
+          "next_tables" : {
+            "__HIT__" : "tbl_act",
+            "__MISS__" : "tbl_act_0"
+          },
+          "default_entry" : {
+            "action_id" : 8,
+            "action_const" : true,
+            "action_data" : ["0xffe"],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_act",
+          "id" : 1,
+          "mlnx_flex" : true,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [29],
+          "actions" : ["act"],
+          "base_default_next" : "node_5",
+          "next_tables" : {
+            "act" : "node_5"
+          },
+          "default_entry" : {
+            "action_id" : 29,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_act_0",
+          "id" : 2,
+          "mlnx_flex" : true,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [30],
+          "actions" : ["act_0"],
+          "base_default_next" : "node_5",
+          "next_tables" : {
+            "act_0" : "node_5"
+          },
+          "default_entry" : {
+            "action_id" : 30,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "FabricIngress.filtering.fwd_classifier",
+          "id" : 3,
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/filtering.p4",
+            "line" : 81,
+            "column" : 10,
+            "source_fragment" : "fwd_classifier"
+          },
+          "mlnx_flex" : false,
+          "key" : [
+            {
+              "match_type" : "exact",
+              "name" : "standard_metadata.ingress_port",
+              "target" : ["standard_metadata", "ingress_port"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.ethernet.dst_addr",
+              "target" : ["ethernet", "dst_addr"],
+              "mask" : null
+            },
+            {
+              "match_type" : "exact",
+              "name" : "hdr.vlan_tag.ether_type",
+              "target" : ["vlan_tag", "ether_type"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "ternary",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [9],
+          "actions" : ["FabricIngress.filtering.set_forwarding_type"],
+          "base_default_next" : "FabricIngress.forwarding.bridging",
+          "next_tables" : {
+            "FabricIngress.filtering.set_forwarding_type" : "FabricIngress.forwarding.bridging"
+          },
+          "default_entry" : {
+            "action_id" : 9,
+            "action_const" : true,
+            "action_data" : ["0x0"],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_act_1",
+          "id" : 4,
+          "mlnx_flex" : true,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [31],
+          "actions" : ["act_1"],
+          "base_default_next" : "FabricIngress.forwarding.bridging",
+          "next_tables" : {
+            "act_1" : "FabricIngress.forwarding.bridging"
+          },
+          "default_entry" : {
+            "action_id" : 31,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "FabricIngress.forwarding.bridging",
+          "id" : 5,
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/forwarding.p4",
+            "line" : 42,
+            "column" : 10,
+            "source_fragment" : "bridging"
+          },
+          "mlnx_flex" : false,
+          "key" : [
+            {
+              "match_type" : "exact",
+              "name" : "hdr.vlan_tag.vlan_id",
+              "target" : ["vlan_tag", "vlan_id"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.ethernet.dst_addr",
+              "target" : ["ethernet", "dst_addr"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "ternary",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [10, 0],
+          "actions" : ["FabricIngress.forwarding.set_next_id_bridging", "NoAction"],
+          "base_default_next" : "FabricIngress.forwarding.routing_v4",
+          "next_tables" : {
+            "FabricIngress.forwarding.set_next_id_bridging" : "FabricIngress.forwarding.routing_v4",
+            "NoAction" : "FabricIngress.forwarding.routing_v4"
+          },
+          "default_entry" : {
+            "action_id" : 0,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "FabricIngress.forwarding.routing_v4",
+          "id" : 6,
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/forwarding.p4",
+            "line" : 82,
+            "column" : 10,
+            "source_fragment" : "routing_v4"
+          },
+          "mlnx_flex" : false,
+          "key" : [
+            {
+              "match_type" : "lpm",
+              "name" : "hdr.ipv4.dst_addr",
+              "target" : ["ipv4", "dst_addr"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "lpm",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [12, 2],
+          "actions" : ["FabricIngress.forwarding.set_next_id_routing_v4", "NoAction"],
+          "base_default_next" : "FabricIngress.forwarding.mpls",
+          "next_tables" : {
+            "FabricIngress.forwarding.set_next_id_routing_v4" : "FabricIngress.forwarding.mpls",
+            "NoAction" : "FabricIngress.forwarding.mpls"
+          },
+          "default_entry" : {
+            "action_id" : 2,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "FabricIngress.forwarding.mpls",
+          "id" : 7,
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/forwarding.p4",
+            "line" : 65,
+            "column" : 10,
+            "source_fragment" : "mpls"
+          },
+          "mlnx_flex" : false,
+          "key" : [
+            {
+              "match_type" : "exact",
+              "name" : "hdr.mpls.label",
+              "target" : ["mpls", "label"],
+              "mlnx_extract" : {
+                "header" : "mpls",
+                "header_type" : "Mpls_h",
+                "field_offset" : 0,
+                "field_size" : 3,
+                "extract_offset" : 0,
+                "extract_size" : 3,
+                "signed" : false
+              },
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [11, 1],
+          "actions" : ["FabricIngress.forwarding.pop_mpls_and_next", "NoAction"],
+          "base_default_next" : "FabricIngress.forwarding.acl",
+          "next_tables" : {
+            "FabricIngress.forwarding.pop_mpls_and_next" : "FabricIngress.forwarding.acl",
+            "NoAction" : "FabricIngress.forwarding.acl"
+          },
+          "default_entry" : {
+            "action_id" : 1,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "FabricIngress.forwarding.acl",
+          "id" : 8,
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/forwarding.p4",
+            "line" : 120,
+            "column" : 10,
+            "source_fragment" : "acl"
+          },
+          "mlnx_flex" : true,
+          "key" : [
+            {
+              "match_type" : "ternary",
+              "name" : "standard_metadata.ingress_port",
+              "target" : ["standard_metadata", "ingress_port"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.ipv4.protocol",
+              "target" : ["ipv4", "protocol"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.tcp.src_port",
+              "target" : ["tcp", "src_port"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.tcp.dst_port",
+              "target" : ["tcp", "dst_port"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.ethernet.dst_addr",
+              "target" : ["ethernet", "dst_addr"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.ethernet.src_addr",
+              "target" : ["ethernet", "src_addr"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.vlan_tag.vlan_id",
+              "target" : ["vlan_tag", "vlan_id"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.vlan_tag.ether_type",
+              "target" : ["vlan_tag", "ether_type"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.ipv4.src_addr",
+              "target" : ["ipv4", "src_addr"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.ipv4.dst_addr",
+              "target" : ["ipv4", "dst_addr"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "ternary",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [13, 14, 15, 16, 17],
+          "actions" : ["FabricIngress.forwarding.set_next_id_acl", "FabricIngress.forwarding.punt_to_cpu", "FabricIngress.forwarding.clone_to_cpu", "FabricIngress.forwarding.drop", "FabricIngress.forwarding.nop_acl"],
+          "base_default_next" : "FabricIngress.next.vlan_meta",
+          "next_tables" : {
+            "FabricIngress.forwarding.set_next_id_acl" : "FabricIngress.next.vlan_meta",
+            "FabricIngress.forwarding.punt_to_cpu" : "FabricIngress.next.vlan_meta",
+            "FabricIngress.forwarding.clone_to_cpu" : "FabricIngress.next.vlan_meta",
+            "FabricIngress.forwarding.drop" : "FabricIngress.next.vlan_meta",
+            "FabricIngress.forwarding.nop_acl" : "FabricIngress.next.vlan_meta"
+          },
+          "default_entry" : {
+            "action_id" : 17,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "FabricIngress.next.vlan_meta",
+          "id" : 9,
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/next.p4",
+            "line" : 72,
+            "column" : 10,
+            "source_fragment" : "vlan_meta"
+          },
+          "mlnx_flex" : false,
+          "key" : [
+            {
+              "match_type" : "exact",
+              "name" : "fabric_metadata.next_id",
+              "target" : ["scalars", "fabric_metadata_t.next_id"],
+              "mlnx_extract" : {
+                "header" : "scalars",
+                "header_type" : "scalars_0",
+                "field_offset" : 9,
+                "field_size" : 4,
+                "extract_offset" : 8,
+                "extract_size" : 5,
+                "signed" : false
+              },
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [21, 20],
+          "actions" : ["FabricIngress.next.set_vlan", "FabricIngress.next.nop"],
+          "base_default_next" : "FabricIngress.next.simple",
+          "next_tables" : {
+            "FabricIngress.next.set_vlan" : "FabricIngress.next.simple",
+            "FabricIngress.next.nop" : "FabricIngress.next.simple"
+          },
+          "default_entry" : {
+            "action_id" : 20,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "FabricIngress.next.simple",
+          "id" : 10,
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/next.p4",
+            "line" : 114,
+            "column" : 10,
+            "source_fragment" : "simple"
+          },
+          "mlnx_flex" : false,
+          "key" : [
+            {
+              "match_type" : "exact",
+              "name" : "fabric_metadata.next_id",
+              "target" : ["scalars", "fabric_metadata_t.next_id"],
+              "mlnx_extract" : {
+                "header" : "scalars",
+                "header_type" : "scalars_0",
+                "field_offset" : 9,
+                "field_size" : 4,
+                "extract_offset" : 8,
+                "extract_size" : 5,
+                "signed" : false
+              },
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [18, 19, 22, 23, 24, 25, 3],
+          "actions" : ["FabricIngress.next.output_simple", "FabricIngress.next.set_vlan_output", "FabricIngress.next.l3_routing_simple", "FabricIngress.next.mpls_routing_v4_simple", "FabricIngress.next.mpls_routing_v6_simple", "FabricIngress.next.l3_routing_vlan", "NoAction"],
+          "base_default_next" : "FabricIngress.next.hashed",
+          "next_tables" : {
+            "FabricIngress.next.output_simple" : "FabricIngress.next.hashed",
+            "FabricIngress.next.set_vlan_output" : "FabricIngress.next.hashed",
+            "FabricIngress.next.l3_routing_simple" : "FabricIngress.next.hashed",
+            "FabricIngress.next.mpls_routing_v4_simple" : "FabricIngress.next.hashed",
+            "FabricIngress.next.mpls_routing_v6_simple" : "FabricIngress.next.hashed",
+            "FabricIngress.next.l3_routing_vlan" : "FabricIngress.next.hashed",
+            "NoAction" : "FabricIngress.next.hashed"
+          },
+          "default_entry" : {
+            "action_id" : 3,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "FabricIngress.next.hashed",
+          "id" : 11,
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/next.p4",
+            "line" : 161,
+            "column" : 10,
+            "source_fragment" : "hashed"
+          },
+          "mlnx_flex" : false,
+          "key" : [
+            {
+              "match_type" : "exact",
+              "name" : "fabric_metadata.next_id",
+              "target" : ["scalars", "fabric_metadata_t.next_id"],
+              "mlnx_extract" : {
+                "header" : "scalars",
+                "header_type" : "scalars_0",
+                "field_offset" : 9,
+                "field_size" : 4,
+                "extract_offset" : 8,
+                "extract_size" : 5,
+                "signed" : false
+              },
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "indirect_ws",
+          "action_profile" : "FabricIngress.next.ecmp_selector",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [26, 27, 28, 4],
+          "actions" : ["FabricIngress.next.l3_routing_hashed", "FabricIngress.next.mpls_routing_v4_hashed", "FabricIngress.next.mpls_routing_v6_hashed", "NoAction"],
+          "base_default_next" : "tbl_act_2",
+          "next_tables" : {
+            "FabricIngress.next.l3_routing_hashed" : "tbl_act_2",
+            "FabricIngress.next.mpls_routing_v4_hashed" : "tbl_act_2",
+            "FabricIngress.next.mpls_routing_v6_hashed" : "tbl_act_2",
+            "NoAction" : "tbl_act_2"
+          }
+        },
+        {
+          "name" : "tbl_act_2",
+          "id" : 12,
+          "mlnx_flex" : true,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [32],
+          "actions" : ["act_2"],
+          "base_default_next" : null,
+          "next_tables" : {
+            "act_2" : null
+          },
+          "default_entry" : {
+            "action_id" : 32,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        }
+      ],
+      "action_profiles" : [
+        {
+          "name" : "FabricIngress.next.ecmp_selector",
+          "id" : 0,
+          "max_size" : 64,
+          "selector" : {
+            "input" : [
+              {
+                "type" : "field",
+                "value" : ["ethernet", "dst_addr"]
+              },
+              {
+                "type" : "field",
+                "value" : ["ethernet", "src_addr"]
+              },
+              {
+                "type" : "field",
+                "value" : ["scalars", "fabric_metadata_t.ip_proto"]
+              },
+              {
+                "type" : "field",
+                "value" : ["scalars", "fabric_metadata_t.l4_src_port"]
+              },
+              {
+                "type" : "field",
+                "value" : ["scalars", "fabric_metadata_t.l4_dst_port"]
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals" : [
+        {
+          "name" : "node_5",
+          "id" : 0,
+          "expression" : {
+            "type" : "expression",
+            "value" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
+                "type" : "field",
+                "value" : ["scalars", "filtering_tmp_0"]
+              }
+            }
+          },
+          "true_next" : "FabricIngress.filtering.fwd_classifier",
+          "false_next" : "tbl_act_1"
+        }
+      ]
+    },
+    {
+      "name" : "control_in_port",
+      "id" : 1,
+      "source_info" : {
+        "filename" : "p4src/fabric/fabric.p4",
+        "line" : 32,
+        "column" : 8,
+        "source_fragment" : "FabricIngress"
+      },
+      "init_table" : "FabricIngress.filtering.ingress_port_vlan",
+      "tables" : [
+        {
+          "name" : "FabricIngress.filtering.ingress_port_vlan",
+          "id" : 13,
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/filtering.p4",
+            "line" : 63,
+            "column" : 10,
+            "source_fragment" : "ingress_port_vlan"
+          },
+          "mlnx_flex" : false,
+          "key" : [
+            {
+              "match_type" : "exact",
+              "name" : "standard_metadata.ingress_port",
+              "target" : ["standard_metadata", "ingress_port"],
+              "mask" : null
+            },
+            {
+              "match_type" : "exact",
+              "name" : "hdr.vlan_tag.is_valid",
+              "target" : ["vlan_tag", "$valid$"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.vlan_tag.vlan_id",
+              "target" : ["vlan_tag", "vlan_id"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "ternary",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [8, 7, 5, 6],
+          "actions" : ["FabricIngress.filtering.push_internal_vlan", "FabricIngress.filtering.set_vlan", "FabricIngress.filtering.drop", "FabricIngress.filtering.nop_ingress_port_vlan"],
+          "base_default_next" : null,
+          "next_tables" : {
+            "__HIT__" : "tbl_act",
+            "__MISS__" : "tbl_act_0"
+          },
+          "default_entry" : {
+            "action_id" : 8,
+            "action_const" : true,
+            "action_data" : ["0xffe"],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_act",
+          "id" : 14,
+          "mlnx_flex" : true,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [29],
+          "actions" : ["act"],
+          "base_default_next" : "node_21",
+          "next_tables" : {
+            "act" : "node_21"
+          },
+          "default_entry" : {
+            "action_id" : 29,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_act_0",
+          "id" : 15,
+          "mlnx_flex" : true,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [30],
+          "actions" : ["act_0"],
+          "base_default_next" : "node_21",
+          "next_tables" : {
+            "act_0" : "node_21"
+          },
+          "default_entry" : {
+            "action_id" : 30,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "FabricIngress.filtering.fwd_classifier",
+          "id" : 16,
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/filtering.p4",
+            "line" : 81,
+            "column" : 10,
+            "source_fragment" : "fwd_classifier"
+          },
+          "mlnx_flex" : false,
+          "key" : [
+            {
+              "match_type" : "exact",
+              "name" : "standard_metadata.ingress_port",
+              "target" : ["standard_metadata", "ingress_port"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.ethernet.dst_addr",
+              "target" : ["ethernet", "dst_addr"],
+              "mask" : null
+            },
+            {
+              "match_type" : "exact",
+              "name" : "hdr.vlan_tag.ether_type",
+              "target" : ["vlan_tag", "ether_type"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "ternary",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [9],
+          "actions" : ["FabricIngress.filtering.set_forwarding_type"],
+          "base_default_next" : "FabricIngress.forwarding.bridging",
+          "next_tables" : {
+            "FabricIngress.filtering.set_forwarding_type" : "FabricIngress.forwarding.bridging"
+          },
+          "default_entry" : {
+            "action_id" : 9,
+            "action_const" : true,
+            "action_data" : ["0x0"],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_act_1",
+          "id" : 17,
+          "mlnx_flex" : true,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [31],
+          "actions" : ["act_1"],
+          "base_default_next" : "FabricIngress.forwarding.bridging",
+          "next_tables" : {
+            "act_1" : "FabricIngress.forwarding.bridging"
+          },
+          "default_entry" : {
+            "action_id" : 31,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "FabricIngress.forwarding.bridging",
+          "id" : 18,
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/forwarding.p4",
+            "line" : 42,
+            "column" : 10,
+            "source_fragment" : "bridging"
+          },
+          "mlnx_flex" : false,
+          "key" : [
+            {
+              "match_type" : "exact",
+              "name" : "hdr.vlan_tag.vlan_id",
+              "target" : ["vlan_tag", "vlan_id"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.ethernet.dst_addr",
+              "target" : ["ethernet", "dst_addr"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "ternary",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [10, 0],
+          "actions" : ["FabricIngress.forwarding.set_next_id_bridging", "NoAction"],
+          "base_default_next" : "FabricIngress.forwarding.routing_v4",
+          "next_tables" : {
+            "FabricIngress.forwarding.set_next_id_bridging" : "FabricIngress.forwarding.routing_v4",
+            "NoAction" : "FabricIngress.forwarding.routing_v4"
+          },
+          "default_entry" : {
+            "action_id" : 0,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "FabricIngress.forwarding.routing_v4",
+          "id" : 19,
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/forwarding.p4",
+            "line" : 82,
+            "column" : 10,
+            "source_fragment" : "routing_v4"
+          },
+          "mlnx_flex" : false,
+          "key" : [
+            {
+              "match_type" : "lpm",
+              "name" : "hdr.ipv4.dst_addr",
+              "target" : ["ipv4", "dst_addr"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "lpm",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [12, 2],
+          "actions" : ["FabricIngress.forwarding.set_next_id_routing_v4", "NoAction"],
+          "base_default_next" : "FabricIngress.forwarding.mpls",
+          "next_tables" : {
+            "FabricIngress.forwarding.set_next_id_routing_v4" : "FabricIngress.forwarding.mpls",
+            "NoAction" : "FabricIngress.forwarding.mpls"
+          },
+          "default_entry" : {
+            "action_id" : 2,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "FabricIngress.forwarding.mpls",
+          "id" : 20,
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/forwarding.p4",
+            "line" : 65,
+            "column" : 10,
+            "source_fragment" : "mpls"
+          },
+          "mlnx_flex" : false,
+          "key" : [
+            {
+              "match_type" : "exact",
+              "name" : "hdr.mpls.label",
+              "target" : ["mpls", "label"],
+              "mlnx_extract" : {
+                "header" : "mpls",
+                "header_type" : "Mpls_h",
+                "field_offset" : 0,
+                "field_size" : 3,
+                "extract_offset" : 0,
+                "extract_size" : 3,
+                "signed" : false
+              },
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [11, 1],
+          "actions" : ["FabricIngress.forwarding.pop_mpls_and_next", "NoAction"],
+          "base_default_next" : "FabricIngress.forwarding.acl",
+          "next_tables" : {
+            "FabricIngress.forwarding.pop_mpls_and_next" : "FabricIngress.forwarding.acl",
+            "NoAction" : "FabricIngress.forwarding.acl"
+          },
+          "default_entry" : {
+            "action_id" : 1,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "FabricIngress.forwarding.acl",
+          "id" : 21,
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/forwarding.p4",
+            "line" : 120,
+            "column" : 10,
+            "source_fragment" : "acl"
+          },
+          "mlnx_flex" : true,
+          "key" : [
+            {
+              "match_type" : "ternary",
+              "name" : "standard_metadata.ingress_port",
+              "target" : ["standard_metadata", "ingress_port"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.ipv4.protocol",
+              "target" : ["ipv4", "protocol"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.tcp.src_port",
+              "target" : ["tcp", "src_port"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.tcp.dst_port",
+              "target" : ["tcp", "dst_port"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.ethernet.dst_addr",
+              "target" : ["ethernet", "dst_addr"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.ethernet.src_addr",
+              "target" : ["ethernet", "src_addr"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.vlan_tag.vlan_id",
+              "target" : ["vlan_tag", "vlan_id"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.vlan_tag.ether_type",
+              "target" : ["vlan_tag", "ether_type"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.ipv4.src_addr",
+              "target" : ["ipv4", "src_addr"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.ipv4.dst_addr",
+              "target" : ["ipv4", "dst_addr"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "ternary",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [13, 14, 15, 16, 17],
+          "actions" : ["FabricIngress.forwarding.set_next_id_acl", "FabricIngress.forwarding.punt_to_cpu", "FabricIngress.forwarding.clone_to_cpu", "FabricIngress.forwarding.drop", "FabricIngress.forwarding.nop_acl"],
+          "base_default_next" : "FabricIngress.next.vlan_meta",
+          "next_tables" : {
+            "FabricIngress.forwarding.set_next_id_acl" : "FabricIngress.next.vlan_meta",
+            "FabricIngress.forwarding.punt_to_cpu" : "FabricIngress.next.vlan_meta",
+            "FabricIngress.forwarding.clone_to_cpu" : "FabricIngress.next.vlan_meta",
+            "FabricIngress.forwarding.drop" : "FabricIngress.next.vlan_meta",
+            "FabricIngress.forwarding.nop_acl" : "FabricIngress.next.vlan_meta"
+          },
+          "default_entry" : {
+            "action_id" : 17,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "FabricIngress.next.vlan_meta",
+          "id" : 22,
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/next.p4",
+            "line" : 72,
+            "column" : 10,
+            "source_fragment" : "vlan_meta"
+          },
+          "mlnx_flex" : false,
+          "key" : [
+            {
+              "match_type" : "exact",
+              "name" : "fabric_metadata.next_id",
+              "target" : ["scalars", "fabric_metadata_t.next_id"],
+              "mlnx_extract" : {
+                "header" : "scalars",
+                "header_type" : "scalars_0",
+                "field_offset" : 9,
+                "field_size" : 4,
+                "extract_offset" : 8,
+                "extract_size" : 5,
+                "signed" : false
+              },
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [21, 20],
+          "actions" : ["FabricIngress.next.set_vlan", "FabricIngress.next.nop"],
+          "base_default_next" : "FabricIngress.next.simple",
+          "next_tables" : {
+            "FabricIngress.next.set_vlan" : "FabricIngress.next.simple",
+            "FabricIngress.next.nop" : "FabricIngress.next.simple"
+          },
+          "default_entry" : {
+            "action_id" : 20,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "FabricIngress.next.simple",
+          "id" : 23,
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/next.p4",
+            "line" : 114,
+            "column" : 10,
+            "source_fragment" : "simple"
+          },
+          "mlnx_flex" : false,
+          "key" : [
+            {
+              "match_type" : "exact",
+              "name" : "fabric_metadata.next_id",
+              "target" : ["scalars", "fabric_metadata_t.next_id"],
+              "mlnx_extract" : {
+                "header" : "scalars",
+                "header_type" : "scalars_0",
+                "field_offset" : 9,
+                "field_size" : 4,
+                "extract_offset" : 8,
+                "extract_size" : 5,
+                "signed" : false
+              },
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [18, 19, 22, 23, 24, 25, 3],
+          "actions" : ["FabricIngress.next.output_simple", "FabricIngress.next.set_vlan_output", "FabricIngress.next.l3_routing_simple", "FabricIngress.next.mpls_routing_v4_simple", "FabricIngress.next.mpls_routing_v6_simple", "FabricIngress.next.l3_routing_vlan", "NoAction"],
+          "base_default_next" : "FabricIngress.next.hashed",
+          "next_tables" : {
+            "FabricIngress.next.output_simple" : "FabricIngress.next.hashed",
+            "FabricIngress.next.set_vlan_output" : "FabricIngress.next.hashed",
+            "FabricIngress.next.l3_routing_simple" : "FabricIngress.next.hashed",
+            "FabricIngress.next.mpls_routing_v4_simple" : "FabricIngress.next.hashed",
+            "FabricIngress.next.mpls_routing_v6_simple" : "FabricIngress.next.hashed",
+            "FabricIngress.next.l3_routing_vlan" : "FabricIngress.next.hashed",
+            "NoAction" : "FabricIngress.next.hashed"
+          },
+          "default_entry" : {
+            "action_id" : 3,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "FabricIngress.next.hashed",
+          "id" : 24,
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/next.p4",
+            "line" : 161,
+            "column" : 10,
+            "source_fragment" : "hashed"
+          },
+          "mlnx_flex" : false,
+          "key" : [
+            {
+              "match_type" : "exact",
+              "name" : "fabric_metadata.next_id",
+              "target" : ["scalars", "fabric_metadata_t.next_id"],
+              "mlnx_extract" : {
+                "header" : "scalars",
+                "header_type" : "scalars_0",
+                "field_offset" : 9,
+                "field_size" : 4,
+                "extract_offset" : 8,
+                "extract_size" : 5,
+                "signed" : false
+              },
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "indirect_ws",
+          "action_profile" : "FabricIngress.next.ecmp_selector",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [26, 27, 28, 4],
+          "actions" : ["FabricIngress.next.l3_routing_hashed", "FabricIngress.next.mpls_routing_v4_hashed", "FabricIngress.next.mpls_routing_v6_hashed", "NoAction"],
+          "base_default_next" : "tbl_act_2",
+          "next_tables" : {
+            "FabricIngress.next.l3_routing_hashed" : "tbl_act_2",
+            "FabricIngress.next.mpls_routing_v4_hashed" : "tbl_act_2",
+            "FabricIngress.next.mpls_routing_v6_hashed" : "tbl_act_2",
+            "NoAction" : "tbl_act_2"
+          }
+        },
+        {
+          "name" : "tbl_act_2",
+          "id" : 25,
+          "mlnx_flex" : true,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 128,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [32],
+          "actions" : ["act_2"],
+          "base_default_next" : null,
+          "next_tables" : {
+            "act_2" : null
+          },
+          "default_entry" : {
+            "action_id" : 32,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        }
+      ],
+      "action_profiles" : [],
+      "conditionals" : [
+        {
+          "name" : "node_21",
+          "id" : 1,
+          "expression" : {
+            "type" : "expression",
+            "value" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
+                "type" : "field",
+                "value" : ["scalars", "filtering_tmp_0"]
+              }
+            }
+          },
+          "true_next" : "FabricIngress.filtering.fwd_classifier",
+          "false_next" : "tbl_act_1"
+        }
+      ]
+    },
+    {
+      "name" : "control_out_port",
+      "id" : 2,
+      "source_info" : {
+        "filename" : "p4src/fabric/fabric.p4",
+        "line" : 52,
+        "column" : 8,
+        "source_fragment" : "FabricEgress"
+      },
+      "init_table" : null,
+      "tables" : [],
+      "action_profiles" : [],
+      "conditionals" : []
+    },
+    {
+      "name" : "control_out_port",
+      "id" : 3,
+      "source_info" : {
+        "filename" : "p4src/fabric/fabric.p4",
+        "line" : 52,
+        "column" : 8,
+        "source_fragment" : "FabricEgress"
+      },
+      "init_table" : null,
+      "tables" : [],
+      "action_profiles" : [],
+      "conditionals" : []
+    }
+  ],
+  "checksums" : [],
+  "force_arith" : [],
+  "extern_instances" : [],
+  "field_aliases" : []
+}
