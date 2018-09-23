@@ -1314,6 +1314,12 @@
               }
             }
           ],
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/port_counter.p4",
+            "line" : 46,
+            "column" : 34,
+            "source_fragment" : "(bit<32>)standard_metadata.egress_port"
+          },
           "mlnx_assign" : true
         },
         {
@@ -1361,6 +1367,12 @@
               }
             }
           ],
+          "source_info" : {
+            "filename" : "p4src/fabric/include/control/port_counter.p4",
+            "line" : 47,
+            "column" : 35,
+            "source_fragment" : "(bit<32>)standard_metadata.ingress_port"
+          },
           "mlnx_assign" : true
         },
         {
@@ -1766,6 +1778,18 @@
               "match_type" : "ternary",
               "name" : "hdr.ipv4.dst_addr",
               "target" : ["ipv4", "dst_addr"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.icmp.type",
+              "target" : ["icmp", "type"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.icmp.code",
+              "target" : ["icmp", "code"],
               "mask" : null
             }
           ],
@@ -2391,6 +2415,18 @@
               "match_type" : "ternary",
               "name" : "hdr.ipv4.dst_addr",
               "target" : ["ipv4", "dst_addr"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.icmp.type",
+              "target" : ["icmp", "type"],
+              "mask" : null
+            },
+            {
+              "match_type" : "ternary",
+              "name" : "hdr.icmp.code",
+              "target" : ["icmp", "code"],
               "mask" : null
             }
           ],

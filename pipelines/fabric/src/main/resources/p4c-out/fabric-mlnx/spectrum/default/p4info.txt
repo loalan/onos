@@ -208,6 +208,18 @@ tables {
     bitwidth: 32
     match_type: TERNARY
   }
+  match_fields {
+    id: 11
+    name: "hdr.icmp.type"
+    bitwidth: 8
+    match_type: TERNARY
+  }
+  match_fields {
+    id: 12
+    name: "hdr.icmp.code"
+    bitwidth: 8
+    match_type: TERNARY
+  }
   action_refs {
     id: 16785374
   }
@@ -708,7 +720,7 @@ counters {
 }
 controller_packet_metadata {
   preamble {
-    id: 2868941301
+    id: 67146229
     name: "packet_in"
     annotations: "@controller_header(\"packet_in\")"
   }
@@ -725,7 +737,7 @@ controller_packet_metadata {
 }
 controller_packet_metadata {
   preamble {
-    id: 2868916615
+    id: 67121543
     name: "packet_out"
     annotations: "@controller_header(\"packet_out\")"
   }
@@ -739,4 +751,6 @@ controller_packet_metadata {
     name: "_pad"
     bitwidth: 7
   }
+}
+type_info {
 }
